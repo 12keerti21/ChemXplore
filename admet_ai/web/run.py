@@ -1,4 +1,11 @@
 """Runs the development web interface for ADMET-AI (Flask)."""
+import warnings
+
+# Suppress noisy warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning, message="to-Python converter.*")
+warnings.filterwarnings("ignore", category=FutureWarning, message="You are using `torch.load`.*")
+import matplotlib
+from tap import tapify
 import random
 import string
 from datetime import timedelta
@@ -70,3 +77,6 @@ def admet_web(host: str = "127.0.0.1", port: int = 5000) -> None:
 
     # Run web app
     app.run(host=host, port=port)
+
+if __name__ == "__main__":
+    admet_web()

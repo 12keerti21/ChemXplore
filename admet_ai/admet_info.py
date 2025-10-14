@@ -28,7 +28,9 @@ def load_admet_info(admet_path: Path = DEFAULT_ADMET_PATH) -> None:
     ADMET_ID_TO_UNITS = dict(zip(ADMET_DF["id"], ADMET_DF["units"]))
 
 
-def lazy_load_admet_info(func: callable) -> callable:
+from collections.abc import Callable
+
+def lazy_load_admet_info(func: Callable) -> Callable:
     """Decorator to lazily load the ADMET info."""
 
     def wrapper(*args, **kwargs):

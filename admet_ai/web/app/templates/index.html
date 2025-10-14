@@ -8,495 +8,1332 @@ radial_description_tooltip %}
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-            crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='scripts/predict.js')}}"></script>
-    <script>
-        // Heartbeat to indicate that the user is still interacting with the session
-        function sendHeartbeat() {
-            fetch('/heartbeat', {method: 'POST'});
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@3-00;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <title>ChemXplore - Advanced Molecular Analysis Platform</title>
+
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary-color: #f093fb;
+            --accent-color: #4fd1c7;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --error-color: #f56565;
+            --dark-bg: #1a202c;
+            --darker-bg: #171923;
+            --card-bg: rgba(45, 55, 72, 0.85); /* Darker card background */
+            --text-primary: #edf2f7; /* Lighter text for dark bg */
+            --text-secondary: #a0aec0; /* Subdued lighter text */
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.25);
+            --shadow-heavy: 0 10px 40px rgba(0, 0, 0, 0.4);
+            --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            --gradient-dark: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
         }
 
-        setInterval(sendHeartbeat, "{{ heartbeat_frequency * 1000 }}");
-    </script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-    <link rel='stylesheet' id='classic-theme-styles-css'
-          href='https://greenstonebio.com/wp-includes/css/classic-themes.min.css?ver=6.2.2' media='all'/>
-    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
-    <title>ADMET-AI</title>
+        body, div, p, h1, h2, h3, a, button, input, textarea {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--gradient-dark);
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            background: rgba(26, 32, 44, 0.95);
+            backdrop-filter: blur(20px);
+            border: none;
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar.scrolled {
+            background: rgba(26, 32, 44, 0.98);
+            padding: 0.5rem 0;
+        }
+
+        .header.logo-and-title {
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .navbar-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #header-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-light);
+            transition: transform 0.3s ease;
+        }
+
+        #header-logo:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        #header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        #intro-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            margin: 0 0 0 2rem;
+            max-width: 800px;
+            line-height: 1.7;
+        }
+
+        .hero-section {
+            background: var(--gradient-dark);
+            padding: 8rem 0 4rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(79, 209, 199, 0.2) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(1deg); }
+            66% { transform: translateY(-20px) rotate(-1deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slideInUp 1s ease-out;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 3rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 300;
+            animation: slideInUp 1s ease-out 0.2s both;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .modern-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .modern-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: var(--gradient-primary);
+            margin: 1rem auto;
+            border-radius: 2px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            padding: 2.5rem;
+            text-align: center;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        
+        .collapse-section {
+            margin: 2rem 0;
+        }
+
+        .collapse-button {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        .collapse-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .collapse-button:hover::before {
+            left: 100%;
+        }
+
+        .collapse-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+            border-color: var(--primary-color);
+        }
+        
+        .dropdown-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .arrow {
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid var(--primary-color);
+            transition: transform 0.3s ease;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+
+        .arrow.arrow-up {
+            transform: rotate(180deg);
+        }
+
+        .predict-and-atc-input {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+            margin: 4rem 0;
+        }
+
+        .predict-input, .atc-input {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-light);
+            backdrop-filter: blur(20px);
+        }
+        
+        .input-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+            background: var(--gradient-primary);
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary.active {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-light) !important;
+        }
+        
+        #predict-button {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 15px;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        #predict-button.loading {
+            background: var(--text-secondary);
+            transform: scale(0.98);
+        }
+        
+        textarea, input[type="text"], input[type="file"] {
+            width: 100%;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            background: rgba(26, 32, 44, 0.7);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            background: rgba(26, 32, 44, 0.9);
+        }
+        
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 32, 44, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(102, 126, 234, 0.3);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .molecule-prediction {
+            list-style: none;
+            margin: 0 0 1.5rem 0;
+        }
+        
+        .molecule-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .molecule-card.hovered {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .smiles-and-svg-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            padding: 1rem 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .smiles-container {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-primary);
+            min-width: 250px;
+        }
+        
+        .molecule-svg-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .radial-plot, .mol-image {
+            transition: transform 0.3s ease;
+        }
+
+        .radial-plot:hover, .mol-image:hover {
+            transform: scale(1.05);
+        }
+
+        .prediction-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .prediction-table th {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .prediction-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .prediction-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .prediction-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .footer {
+            background: var(--gradient-dark);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .footer-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-text a:hover {
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 992px) {
+            .predict-and-atc-input {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .hero-subtitle { font-size: 1.2rem; }
+            .section { padding: 3rem 0; }
+            .container { padding: 0 1rem; }
+            #intro-text { display: none; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .slide-in-left { animation: slideInLeft 0.8s ease-out; }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .slide-in-right { animation: slideInRight 0.8s ease-out; }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Custom Dropdown Styling */
+        .dropdown-menu {
+            width: 100%;
+            max-height: 350px;
+            overflow-y: auto;
+            background: var(--darker-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 0.5rem !important;
+            padding: 0.5rem 0;
+            box-shadow: var(--shadow-heavy);
+        }
+        
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 0.8rem 1rem;
+            clear: both;
+            font-weight: 400;
+            color: var(--text-primary);
+            text-align: inherit;
+            text-decoration: none;
+            white-space: nowrap;
+            background-color: transparent;
+            border: 0;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background-color: rgba(102, 126, 234, 0.1);
+            color: var(--text-primary);
+        }
+
+        .dropdown-divider {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-control {
+            background-color: var(--dark-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-control:focus {
+            background-color: var(--darker-bg);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* --- FIX: ALLOW DROPDOWN TO BE VISIBLE OUTSIDE CARD --- */
+        #drugbank .modern-card {
+            overflow: visible;
+        }
+
+        /* --- Plot Container Styling --- */
+        #drugbank-plot {
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        #drugbank-plot-inner {
+            position: relative;
+            width: 100%;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* Make plot responsive */
+        #drugbank-plot-inner .js-plotly-plot {
+            width: 100% !important;
+        }
+
+        #drugbank-plot-inner .js-plotly-plot .plot-container {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        #drugbank-plot-inner .main-svg {
+            width: 100%;
+            height: 100%;
+            max-height: 70vh;
+        }
+
+        /* Ensure tooltips are visible */
+        .plotly-tooltip {
+            z-index: 1000;
+        }
+
+        /* Consolidated plot card utility class */
+        .plot-card {
+            margin-top: 1rem;
+            padding: 1.5rem 2rem;
+        }
+    </style>
 </head>
+
 <body>
-<nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class="container-fluid header logo-and-title">
-        <a href="https://admet.ai.greenstonebio.com">
-            <div class="navbar-header">
-                <img id="header-logo" src="../static/images/ADMET.jpg"
-                     alt="ADMET-AI Logo"/>
-                <h2 id="header-title">ADMET-AI</h2>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid header logo-and-title">
+            <a class="navbar-brand" href="#" aria-label="ChemXplore Home">
+                <div class="navbar-header">
+                    <img id="header-logo" src="{{ url_for('static', filename='images/logo2.png') }}" alt="ChemXplore Logo"/>
+                    <h2 id="header-title">ChemXplore</h2>
+                </div>
+            </a>
+            <p id="intro-text">
+                <b>ChemXplore</b> is an advanced molecular analysis platform for predicting <b>A</b>bsorption,
+                <b>D</b>istribution, <b>M</b>etabolism, <b>E</b>xcretion, and <b>T</b>oxicity (<strong>ADMET</strong>)
+                properties using cutting-edge machine learning models.
+            </p>
+        </div>
+    </nav>
+
+    <div id="spinner-overlay" class="spinner-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="hero-section">
+        <div class="hero-background"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Explore Molecular Intelligence</h1>
+                <p class="hero-subtitle">Advanced ADMET prediction platform powered by graph neural networks</p>
             </div>
-        </a>
-        <p id="intro-text">
-            <b>ADMET-AI</b> is a simple, fast, and accurate web interface for predicting the <b>A</b>bsorption,
-            <b>D</b>istribution,
-            <b>M</b>etabolism, <b>E</b>xcretion, and <b>T</b>oxicity (<strong>ADMET</strong>)
-            properties of molecules using machine learning models.
-        </p>
-    </div>
-</nav>
-
-<div id="spinner-overlay" class="spinner-overlay">
-    <div class="spinner"></div>
-</div>
-
-<div class="container" id="description">
-    <h1>ADMET-AI</h1>
-
-    <button id="background-collapse-button" class="btn btn-link2 collapse-button" type="button" data-toggle="collapse"
-            data-target="#background-text" aria-expanded="false" aria-controls="background-text">
-        <div id="background-arrow" class="arrow arrow-down"></div>
-        <strong class="dropdown-title">Background</strong>
-    </button>
-    <div id="background-text" class="collapse">
-        <p>
-            <strong><u>ADMET:</u></strong> The evaluation of pharmacokinetics and toxicity is crucial for the design of
-            new therapeutic candidates.
-            <i>In silico</i> virtual screens and generative AI output a vast number of molecules that must be
-            filtered to a tractable number for synthesis and experimental validation. An effective primary filter
-            is to evaluate candidate compounds based on their <b>A</b>bsorption, <b>D</b>istribution,
-            <b>M</b>etabolism, <b>E</b>xcretion, and <b>T</b>oxicity (<strong>ADMET</strong>) properties.
-        </p>
-        <p>
-            <strong><u>ADMET-AI:</u></strong> ADMET-AI is a simple, fast, and accurate web interface for predicting
-            the ADMET properties of molecules using machine learning models.
-        </p>
-        <p>
-            <strong><u>Models:</u></strong> ADMET-AI predicts ADMET properties using a graph neural network architecture
-            called <strong>Chemprop-RDKit</strong> (see the <a href="https://github.com/chemprop/chemprop">Chemprop</a>
-            package for details). ADMET-AI's Chemprop-RDKit models were trained on 41 ADMET datasets from
-            the <a href="https://tdcommons.ai/" target="_blank">Therapeutics Data Commons (TDC)</a>.
-            ADMET-AI’s Chemprop-RDKit models have the <strong>highest average rank</strong> on the
-            <a href="https://tdcommons.ai/benchmark/admet_group/overview/" target="_blank">TDC ADMET Benchmark Group
-                leaderboard</a>. ADMET-AI is also currently the fastest web-based ADMET predictor.
-        </p>
-        <p>
-            <strong><u>References:</u></strong> The ADMET-AI code can be found at <a
-                href="https://github.com/swansonk14/admet_ai" target="_blank">github.com/swansonk14/admet_ai</a>, and
-            ADMET-AI is described in detail in this paper:
-            <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030?utm_source=authortollfreelink&utm_campaign=bioinformatics&utm_medium=email&guestAccessKey=f4fca1d2-49ec-4b10-b476-5aea3bf37045" target="_blank">ADMET-AI: A machine
-                learning ADMET platform for evaluation of large-scale chemical libraries</a>. Please cite us if
-            ADMET-AI is useful in your work.
-        </p>
+        </div>
     </div>
 
-    <br>
+    <div class="container section" id="description">
+        <div class="features-grid">
+            <div class="modern-card feature-card slide-in-left">
+                <div class="feature-icon"><i class="fas fa-atom"></i></div>
+                <h3 class="feature-title">Molecular Analysis</h3>
+                <p class="feature-description">
+                    Advanced graph neural network architecture for precise ADMET property prediction with state-of-the-art accuracy.
+                </p>
+            </div>
+            
+            <div class="modern-card feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <h3 class="feature-title">Performance Excellence</h3>
+                <p class="feature-description">
+                    Highest average rank on TDC ADMET Benchmark Group leaderboard with lightning-fast prediction speed.
+                </p>
+            </div>
+            
+            <div class="modern-card feature-card slide-in-right">
+                <div class="feature-icon"><i class="fas fa-database"></i></div>
+                <h3 class="feature-title">Comprehensive Data</h3>
+                <p class="feature-description">
+                    Trained on 41 ADMET datasets from Therapeutics Data Commons with DrugBank reference comparisons.
+                </p>
+            </div>
+        </div>
 
-    <button id="use-collapse-button" class="btn btn-link2 collapse-button" type="button" data-toggle="collapse"
-            data-target="#use-text" aria-expanded="false" aria-controls="use-text">
-        <div id="use-arrow" class="arrow arrow-down"></div>
-        <strong class="dropdown-title">Use</strong>
-    </button>
-    <div id="use-text" class="collapse">
-        <h3>Input</h3>
-        <p>
-            <strong><u>Molecules:</u></strong> ADMET-AI can make predictions for up to <strong>{{
-            "{:,}".format(max_molecules) }}</strong> molecules at a time by (1)
-            providing SMILES (one per line) in the text box, (2) uploading a CSV file with SMILES, or (3) drawing a
-            molecule using the interactive tool and then converting it to a SMILES.
-        </p>
-        <p>
-            <strong><u>DrugBank Reference:</u></strong> To provide relevant context, ADMET predictions on input
-            molecules are compared to predictions on {{ "{:,}".format(drugbank_total_size) }} approved drugs from the <a
-                href="https://go.drugbank.com/"
-                target="_blank">DrugBank</a>. This
-            reference set can be filtered to a specific category of drugs for a more relevant comparison by selecting an
-            <a href="https://www.whocc.no/atc_ddd_index/" target="_blank">Anatomical
-                Therapeutic Chemical (ATC)</a> code.
-        </p>
-        <p>
-            <strong><u>Predict:</u></strong> After selecting input molecules and a DrugBank reference set, click the
-            “Predict” button to make ADMET predictions.
-        </p>
-        <h3>Output</h3>
-        <p>
-            <strong><u>Summary Plot:</u></strong> The summary plot shows the distribution of ADMET predictions
-            for all input molecules compared to the DrugBank reference set. The x- and y-axes
-            can be changed to show any two ADMET properties.
-        </p>
-        <p>
-            <strong><u>Radial Plot:</u></strong> For each input molecule, a radial plot is shown summarizing
-            five key ADMET properties in terms of their DrugBank percentile:
-        </p>
-        {{ radial_description_list() }}
-        <p>
-            <strong><u>ADMET Predictions:</u></strong> Clicking on each displayed molecule will show the molecule’s
-            ADMET predictions in tabular form. For each molecule, ADMET-AI computes 8 physicochemical properties
-            using <a href="https://www.rdkit.org/docs/index.html" target="_blank">RDKit</a> and predicts 41 ADMET
-            properties using its Chemprop-RDKit graph neural networks.
-            For regression properties, the property is directly predicted with the units shown. For
-            classification properties, the predicted value is the probability that the molecule has the
-            property (e.g., probability of blood-brain barrier penetration).
-            Additionally, the percentile of the molecule’s property compared to the DrugBank reference is shown. Note:
-            For regression properties, the displayed value is clipped to a valid range (e.g., &#8805;0 for half life)
-            while the downloaded results contain the original value.
-        </p>
-        <p>
-            <strong><u>Download Predictions:</u></strong> Predictions for the first <strong>{{
-            "{:,}".format(max_visible_molecules) }}</strong> molecules
-            are shown on the website. Predictions for all input molecules can be downloaded as a CSV file by clicking
-            the “Download Results” button.
-        </p>
-        <h3>Notes</h3>
-        <p>
-            <strong><u>Storing Molecules:</u></strong> ADMET-AI does <strong>not</strong> store any molecules uploaded
-            to the website. All molecules are deleted after predictions are made.
-        </p>
-    </div>
-
-    <br>
-
-    <button id="local-collapse-button" class="btn btn-link2 collapse-button" type="button" data-toggle="collapse"
-            data-target="#local-text" aria-expanded="false" aria-controls="local-text">
-        <div id="local-arrow" class="arrow arrow-down"></div>
-        <strong class="dropdown-title">Local Prediction</strong>
-    </button>
-    <div id="local-text" class="collapse">
-        <p>ADMET-AI can be run locally as a <strong>command line tool</strong> for large-scale batch prediction or as a
-            <strong>Python module</strong> for use within other Python-based drug discovery tools. Please see <a
-                    href="https://github.com/swansonk14/admet_ai"
-                    target="_blank">github.com/swansonk14/admet_ai</a> for more
-            details.
-        </p>
-    </div>
-</div>
-
-<div class="container" id="predict-content">
-    <div class="predict-and-atc-input">
-        <div class="predict-input">
-            <h2>Predict</h2>
-
-            {% set max_molecules_text = " up to <strong>{:,}</strong> ".format(max_molecules) if max_molecules else " "
-            %}
-
-            <p>Input{{ max_molecules_text | safe }}molecules to make ADMET predictions.</p>
-
-            <form id="molecule-form" enctype="multipart/form-data" method="POST">
-                <!--SMILES upload type selector-->
-                <div class="btn-group" id="input-select" data-toggle="buttons">
-                    <label id="text-button" class="btn btn-primary active">
-                        <input type="radio" name="input-type" value="text" autocomplete="off"> Text Input
-                    </label>
-                    <label id="file-button" class="btn btn-primary">
-                        <input type="radio" name="input-type" value="file" autocomplete="off"> Upload File
-                    </label>
-                    <label id="draw-button" class="btn btn-primary">
-                        <input type="radio" name="input-type" value="button" autocomplete="off"> Draw Molecule
-                    </label>
-                    <label id="example-button" class="btn btn-primary">
-                        <input type="radio" name="input-type" value="button" autocomplete="off"> Example
-                    </label>
+        <div class="collapse-section">
+            <button id="background-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#background-text" aria-expanded="false" aria-controls="background-text">
+                <div id="background-arrow" class="arrow"></div>
+                <strong class="dropdown-title"><i class="fas fa-info-circle me-2"></i>Background</strong>
+            </button>
+            <div id="background-text" class="collapse">
+                <div class="modern-card" style="margin-top: 1rem; padding: 2rem;">
+                    <p>
+                        <strong><u>ADMET:</u></strong> The evaluation of pharmacokinetics and toxicity is crucial for the design of
+                        new therapeutic candidates. <i>In silico</i> virtual screens and generative AI output a vast number of molecules that must be
+                        filtered to a tractable number for synthesis and experimental validation. An effective primary filter
+                        is to evaluate candidate compounds based on their <b>A</b>bsorption, <b>D</b>istribution,
+                        <b>M</b>etabolism, <b>E</b>xcretion, and <b>T</b>oxicity (<strong>ADMET</strong>) properties.
+                    </p>
+                    <p>
+                        <strong><u>ChemXplore:</u></strong> ChemXplore is an advanced molecular analysis platform for predicting
+                        ADMET properties using state-of-the-art machine learning models with intuitive visualization.
+                    </p>
+                    <p>
+                        <strong><u>Models:</u></strong> ChemXplore predicts ADMET properties using a graph neural network architecture
+                        called <strong>Chemprop-RDKit</strong>. Our models were trained on 41 ADMET datasets from
+                        the <a href="https://tdcommons.ai/" target="_blank">Therapeutics Data Commons (TDC)</a> and achieve
+                        the <strong>highest average rank</strong> on the TDC ADMET Benchmark Group leaderboard.
+                    </p>
                 </div>
+            </div>
+        </div>
 
-                <!--SMILES input-->
-                <div id="text-input-form">
-                    <h5>SMILES (one per line)</h5>
-                    <textarea id="text-smiles-input" name="text-smiles" cols="100" rows="10" placeholder="SMILES"
-                              required>{{ text_smiles }}</textarea>
+        <div class="collapse-section">
+            <button id="use-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#use-text" aria-expanded="false" aria-controls="use-text">
+                <div id="use-arrow" class="arrow"></div>
+                <strong class="dropdown-title"><i class="fas fa-play-circle me-2"></i>How to Use</strong>
+            </button>
+            <div id="use-text" class="collapse">
+                <div class="modern-card" style="margin-top: 1rem; padding: 2rem;">
+                    <h3 style="color: var(--primary-color); margin-bottom: 1rem;"><i class="fas fa-upload"></i> Input</h3>
+                    <p>
+                        <strong><u>Molecules:</u></strong> ChemXplore can analyze up to <strong>{{ "{:,}".format(max_molecules | default(1000)) }}</strong> molecules simultaneously through SMILES input, CSV upload, or interactive molecular drawing.
+                    </p>
+                    <p>
+                        <strong><u>DrugBank Reference:</u></strong> Compare your molecules against {{ "{:,}".format(drugbank_total_size | default(10000)) }} approved drugs from DrugBank, filtered by Anatomical Therapeutic Chemical (ATC) codes for relevant context.
+                    </p>
+                    
+                    <h3 style="color: var(--primary-color); margin: 2rem 0 1rem 0;"><i class="fas fa-chart-area"></i> Output</h3>
+                    <p>
+                        <strong><u>Interactive Visualizations:</u></strong> Dynamic summary plots and radial visualization charts showing ADMET properties with percentile comparisons to DrugBank reference sets.
+                    </p>
+                    <p>
+                        <strong><u>Comprehensive Predictions:</u></strong> 8 physicochemical properties and 41 ADMET predictions with confidence metrics and downloadable results.
+                    </p>
                 </div>
-                <div id="file-input-form">
-                    <h5>CSV file containing SMILES in the provided column</h5>
-                    <div id="file-input">
-                        <input id="file-smiles-input" type="file" name="data" accept=".csv">
-                        <span id="smiles-column"><b>SMILES column: </b></span>
-                        <input id="file-smiles-column" name="smiles-column" placeholder="SMILES column" value="smiles">
+            </div>
+        </div>
+
+        <div class="collapse-section">
+            <button id="local-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#local-text" aria-expanded="false" aria-controls="local-text">
+                <div id="local-arrow" class="arrow"></div>
+                <strong class="dropdown-title"><i class="fas fa-terminal me-2"></i>Local Installation</strong>
+            </button>
+            <div id="local-text" class="collapse">
+                <div class="modern-card" style="margin-top: 1rem; padding: 2rem;">
+                    <p>ChemXplore can be deployed locally as a <strong>command line tool</strong> for high-throughput batch processing or integrated as a <strong>Python module</strong> within existing drug discovery pipelines.</p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; margin: 1rem 0;">
+                        <code>pip install chemxplore</code>
                     </div>
                 </div>
-                <div id="draw-input-form">
-                    <h5>Draw a molecule</h5>
-                    {{ chemdraw() }}
-                    <input id="draw-smiles-input" name="draw-smiles" placeholder="SMILES">
-                </div>
-
-                <br>
-
-                <button id="predict-button" type="submit" class="btn btn-primary btn-md">Predict</button>
-            </form>
-        </div>
-
-        <div class="atc-input">
-            <h2>DrugBank Reference</h2>
-            <p>Create a DrugBank reference set to provide context for ADMET predictions.</p>
-            <p>Choose an
-                <a href="https://www.whocc.no/atc_ddd_index/" target="_blank">Anatomical
-                    Therapeutic Chemical (ATC)</a> code to select a subset of DrugBank approved drugs or choose "all"
-                for
-                all
-                approved drugs.</p>
-            <p>Selected ATC code "<strong id="selected-atc-code">{{ atc_code }}</strong>" includes <strong
-                    id="drugbank-size">{{
-                "{:,}".format(drugbank_size)
-                }}</strong> molecules.</p>
-
-            <div class="dropdown">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
-                    Select ATC Code
-                </button>
-                <div class="dropdown-menu">
-                    <input class="form-control" id="atc-selection" type="text" placeholder="Search..">
-                    <li>
-                        {% for drugbank_atc_code in drugbank_atc_codes %}
-                        <a class="dropdown-item atc-item">{{ drugbank_atc_code }}</a>
-                        {% endfor %}
-                    </li>
-                </div>
             </div>
         </div>
     </div>
 
-    {% if warnings %}
-    {% for warning in warnings %}
-    {{ warning_message(warning) }}
-    {% endfor %}
-    {% endif %}
+    <div class="container section" id="predict-content">
+        <h2 class="section-title">Molecular Prediction Engine</h2>
+        
+        <div class="predict-and-atc-input">
+            <div class="predict-input slide-in-left">
+                <h2 class="input-title"><i class="fas fa-flask me-2" style="color: var(--primary-color);"></i>Molecule Input</h2>
 
-    {% if errors %}
-    {% for error in errors %}
-    {{ error_message(error) }}
-    {% endfor %}
-    {% endif %}
+                {% set max_molecules_text = " up to <strong>{:,}</strong> ".format(max_molecules | default(1000)) if max_molecules is defined else " " %}
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Input{{ max_molecules_text | safe }}molecules to generate comprehensive ADMET predictions.</p>
 
-    <hr>
+                <form id="molecule-form" enctype="multipart/form-data" method="POST">
+                    <div class="btn-group" id="input-select" role="group" aria-label="Input type">
+                        <input type="radio" class="btn-check" name="input-type" id="text-radio" value="text" autocomplete="off" checked>
+                        <label class="btn btn-primary" for="text-radio"><i class="fas fa-keyboard"></i> Text</label>
 
-    {% if predicted %}
+                        <input type="radio" class="btn-check" name="input-type" id="file-radio" value="file" autocomplete="off">
+                        <label class="btn btn-primary" for="file-radio"><i class="fas fa-file-upload"></i> File</label>
+                        
+                        <input type="radio" class="btn-check" name="input-type" id="draw-radio" value="draw" autocomplete="off">
+                        <label class="btn btn-primary" for="draw-radio"><i class="fas fa-pencil-alt"></i> Draw</label>
+                        
+                        <input type="radio" class="btn-check" name="input-type" id="example-radio" value="example" autocomplete="off">
+                        <label class="btn btn-primary" for="example-radio"><i class="fas fa-vial"></i> Example</label>
+                    </div>
 
-    <h2>ADMET Predictions</h2>
+                    <div id="text-input-form">
+                        <label for="text-smiles-input" class="form-label d-flex align-items-center mb-2">
+                            <i class="fas fa-code me-2" style="color: var(--accent-color);"></i>SMILES (one per line)
+                        </label>
+                        <textarea id="text-smiles-input" name="text-smiles" rows="10" placeholder="Enter SMILES strings here, one per line..." style="min-height: 200px;" required>{{ text_smiles | default('') }}</textarea>
+                    </div>
+                    
+                    <div id="file-input-form" style="display: none;">
+                        <label for="file-smiles-input" class="form-label d-flex align-items-center mb-2">
+                            <i class="fas fa-file-csv me-2" style="color: var(--accent-color);"></i>CSV file containing SMILES
+                        </label>
+                        <div class="d-flex gap-3 align-items-end flex-wrap">
+                            <div class="flex-grow-1">
+                                <input id="file-smiles-input" type="file" name="data" accept=".csv" class="form-control" style="border-style: dashed; background: rgba(102, 126, 234, 0.1);">
+                            </div>
+                            <div>
+                                <label for="file-smiles-column" class="form-label" style="font-size: 0.9rem; margin-bottom: 0.5rem;">SMILES Column:</label>
+                                <input id="file-smiles-column" class="form-control" name="smiles-column" placeholder="smiles" value="smiles" style="width: 200px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="draw-input-form" style="display: none;">
+                        <label for="draw-smiles-input" class="form-label d-flex align-items-center mb-2">
+                            <i class="fas fa-draw-polygon me-2" style="color: var(--accent-color);"></i>Interactive Molecule Editor
+                        </label>
+                        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+                            {{ chemdraw() }}
+                        </div>
+                        <input id="draw-smiles-input" name="draw-smiles" class="form-control" placeholder="Generated SMILES will appear here...">
+                    </div>
 
-    <div class="atc-and-download">
-        <p><strong><u>Input:</u> {{ "{:,}".format(num_molecules) }}</strong> {{ "molecule" if num_molecules == 1 else
-            "molecules"
-            }}. <strong><u>DrugBank reference:</u> {{ "{:,}".format(drugbank_size) }}</strong> {{ "molecule" if
-            drugbank_size
-            == 1 else "molecules"
-            }} with ATC code
-            "<strong
-                    id="applied-atc-code">{{ atc_code }}</strong>".</p>
+                    <br>
 
-        <a href="{{ url_for('download_predictions') }}" class="download-results">
-            <button class="btn btn-primary">Download Results</button>
-        </a>
-    </div>
+                    <button id="predict-button" type="submit" class="btn btn-primary btn-lg" aria-label="Generate ADMET Predictions">
+                        <i class="fas fa-rocket me-2"></i>Generate Predictions
+                    </button>
+                </form>
+            </div>
 
-    <hr>
+            <div class="atc-input slide-in-right">
+                <h2 class="input-title"><i class="fas fa-database me-2" style="color: var(--secondary-color);"></i>Reference Dataset</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Configure DrugBank reference context for meaningful ADMET comparisons.</p>
+                
+                <div style="background: rgba(240, 147, 251, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin-bottom: 1rem;">Choose an <a href="https://www.whocc.no/atc_ddd_index/" target="_blank" style="color: var(--secondary-color);">Anatomical Therapeutic Chemical (ATC)</a> code to filter DrugBank approved drugs.</p>
+                    
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div style="background: rgba(255,255,255,0.1); padding: 0.8rem 1.2rem; border-radius: 8px;">
+                            <strong style="color: var(--text-primary);">Selected ATC:</strong> 
+                            <span id="selected-atc-code" style="color: var(--secondary-color); font-weight: 600;">"{{ atc_code | default('all') }}"</span>
+                        </div>
+                        <div style="background: rgba(79, 209, 199, 0.2); padding: 0.8rem 1.2rem; border-radius: 8px;">
+                            <strong style="color: var(--text-primary);">Dataset Size:</strong> 
+                            <span id="drugbank-size" style="color: var(--accent-color); font-weight: 600;">{{ "{:,}".format(drugbank_size | default(10000)) }}</span> molecules
+                        </div>
+                    </div>
+                </div>
 
-    {% if drugbank_plot %}
-    <button id="drugbank-collapse-button" class="btn btn-link2 collapse-button" type="button" data-toggle="collapse"
-            data-target="#drugbank" aria-expanded="false" aria-controls="drugbank">
-        <div id="drugbank-arrow" class="arrow arrow-down"></div>
-        <strong class="dropdown-title">Summary Plot</strong>
-    </button>
-    <div id="drugbank" class="collapse">
-        <div id="drugbank-plot">
-            <div id="drugbank-plot-inner">
-                {{ drugbank_plot | safe }}
+                <div class="dropdown">
+                    <button type="button" class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select ATC Code">
+                        <span><i class="fas fa-filter me-2"></i>Select ATC Code</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="px-3 py-2">
+                            <input class="form-control" id="atc-selection" type="text" placeholder="Search ATC codes...">
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="atc-items-container" style="max-height: 250px; overflow-y: auto;">
+                            {% for drugbank_atc_code in drugbank_atc_codes | default([]) %}
+                            <button class="dropdown-item atc-item" type="button">{{ drugbank_atc_code }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <br>
-
-        <div id="drugbank-plot-controls">
-            {% for axis in ["y", "x"] %}
-            <div class="dropdown">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
-                    Select DrugBank {{ axis }}-axis property
-                </button>
-                <div class="dropdown-menu">
-                    <input class="form-control" id="drugbank-{{ axis }}-axis-selection" type="text"
-                           placeholder="Search..">
-                    <li>
-                        {% for task in drugbank_tasks %}
-                        <a class="dropdown-item drugbank-{{ axis }}-axis-item">{{ task }}</a>
-                        {% endfor %}
-                    </li>
+        {% if warnings %}
+        <div class="my-4">
+            {% for warning in warnings %}
+            <div class="modern-card" style="background: rgba(237, 137, 54, 0.1); border-left: 4px solid var(--warning-color); padding: 1.5rem; margin-bottom: 1rem;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i>
+                    <span style="color: var(--warning-color); font-weight: 600;">{{ warning }}</span>
                 </div>
             </div>
             {% endfor %}
         </div>
-    </div>
+        {% endif %}
 
-    {% endif %}
-
-    <hr>
-
-    <ul id="list">
-        {% for smiles_index in range(num_display_molecules) %}
-        {% set smiles = all_smiles[smiles_index] %}
-
-        <li class="index molecule-prediction">
-            <button id="molecule-{{ smiles_index }}-collapse-button"
-                    class="btn btn-link2 collapse-button"
-                    type="button"
-                    data-toggle="collapse"
-                    data-target="#collapse-info-{{ smiles_index }}" aria-expanded="false"
-                    aria-controls="collapse-info-{{ smiles_index }}">
-                <div id="molecule-{{ smiles_index }}-arrow" class="arrow arrow-down mol-arrow"></div>
-                <div class="smiles-and-svg-container">
-                    <div class="smiles-container">
-                        <strong>Molecule
-                            {{ smiles_index + 1 }}: {{
-                            smiles }}</strong>
-                    </div>
-                    <div class="molecule-svg-container">
-                        <div id="radial-plot-{{ smiles_index }}" class="radial-plot" data-toggle="tooltip"
-                             data-html="true" title="{{ radial_description_tooltip() }}">
-                            {{ radial_svgs[smiles_index] | safe }}
-                        </div>
-                        <div id="molecule-image-{{ smiles_index }}" class="mol-image">
-                            {{ mol_svgs[smiles_index] | safe }}
-                        </div>
-                    </div>
-                </div>
-                <script>
-                    $(document).ready(function () {
-                        let buttonName = `molecule-{{ smiles_index }}`;
-                        $(`#${buttonName}-collapse-button`).click(function () {
-                            let arrow_div = $(`#${buttonName}-arrow`);
-                            arrow_div.toggleClass("arrow-up");
-                            arrow_div.toggleClass("arrow-down");
-                        });
-                    });
-                </script>
-            </button>
-
-            <div id="collapse-info-{{ smiles_index }}" class="collapse">
-                <div class="prediction-container">
-                    {% for category in ["Physicochemical", "Absorption", "Distribution", "Metabolism", "Excretion",
-                    "Toxicity"] %}
-                    <div class="prediction-category-container">
-                        <div class="prediction-header">
-                            <img src="../static/images/{{ category.lower() }}.jpg" alt="{{ category }}"
-                                 class="prediction-category-image"/>
-                            <h3 class="table-header">{{ category }}</h3>
-                        </div>
-
-                        <table class="prediction-table">
-                            <thead>
-                            <tr>
-                                {% set value_name = "value" if category == "Physicochemical" else "prediction" %}
-                                <th data-toggle="tooltip" title="The {{ category.lower() }} property.">Property</th>
-                                <th data-toggle="tooltip"
-                                    title="{{ 'Value computed by RDKit.' if category == 'Physicochemical' else 'Prediction by ADMET-AI\'s Chemprop-RDKit graph neural network.' }}">
-                                    {{ "Value" if category == "Physicochemical" else "Prediction" }}
-                                </th>
-                                <th data-toggle="tooltip"
-                                    title="The percentile of the molecule's {{ value_name }} compared to the DrugBank reference of {{ '{:,}'.format(drugbank_size) }} {{ 'molecule' if num_molecules == 1 else 'molecules' }} with ATC code &quot;{{ atc_code }}&quot;.">
-                                    DrugBank Percentile
-                                </th>
-                                <th data-toggle="tooltip"
-                                    title="Units of the {{ value_name }}. &quot;-&quot; indicates that the {{ value_name }} is the probability that the molecule has that property.">
-                                    Units
-                                </th>
-
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% set category_info = admet_info[admet_info["category"] == category] %}
-                            {% for _, row in category_info.iterrows() %}
-
-                            <tr>
-                                <td><strong>
-                                    <a href={{ row["url"] }} target="_blank" class="data-link">
-                                    {{ row["name"] }}
-                                    </a>
-                                    {% if category != "Physicochemical" %}
-                                    {% if row["task_type"] == "classification" %}
-                                    {% set first_metric = "AUROC" %}
-                                    {% set second_metric = "AUPRC" %}
-                                    {% else %}
-                                    {% set first_metric = "R^2" %}
-                                    {% set second_metric = "MAE" %}
-                                    {% endif %}
-                                    <span
-                                            class="glyphicon glyphicon-question-sign dataset-tooltip"
-                                            data-toggle="tooltip"
-                                            data-html="true"
-                                            data-placement="right"
-                                            title="Dataset Size: {{ '{:,.0f}'.format(row['size']) }}<br>
-                                            {{ 'Species: {}<br>'.format(row['species']) if row['species'] != '-' else '' }}
-                                            {{ string_to_html_sup('{}: {:.2f}'.format(first_metric, row[first_metric])) | safe }}<br>
-                                            {{ string_to_html_sup('{}: {:.2f}'.format(second_metric, row[second_metric])) | safe }}
-                                            {{ '<br>TDC Leaderboard Rank: {}'.format(row['tdc_rank']) if row['tdc_rank'] != '-' else '' }}">
-                                                                </span>
-                                    {% if row[first_metric] < low_performance_threshold %}
-                                    <span
-                                            class="glyphicon glyphicon-warning-sign lower-accuracy-tooltip"
-                                            data-toggle="tooltip"
-                                            data-placement="right"
-                                            title="Lower accuracy">
-                                                                            </span>
-                                    {% endif %}
-                                    {% endif %}
-                                </strong></td>
-
-                                <td>
-                                    {% set pred = smiles_to_property_id_to_pred[smiles][row["id"]] %}
-                                    {% set pred = min(max(pred, row["minimum"]), row["maximum"]) %}
-                                    {{ ("{:.2f}" if pred == 0 or pred > 0.005 or pred < -0.005 else "{:.2e}").format(pred) }}
-                                </td>
-
-                                <td>
-                                    {{
-                                    "{:.2f}".format(smiles_to_property_id_to_pred[smiles][row["id"] + "_" +
-                                    drugbank_approved_percentile_suffix])
-                                    }}%
-                                </td>
-                                {% if row["units"] == "-" %}
-                                <td data-toggle="tooltip"
-                                    title="&quot;-&quot; indicates that the {{ value_name }} is the probability that the molecule has that property.">
-                                    {% else %}
-                                <td>
-                                    {% endif %}
-                                    {{ string_to_html_sup(row["units"]) | safe }}
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% endfor %}
+        {% if errors %}
+        <div class="my-4">
+            {% for error in errors %}
+            <div class="modern-card" style="background: rgba(245, 101, 101, 0.1); border-left: 4px solid var(--error-color); padding: 1.5rem; margin-bottom: 1rem;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-times-circle" style="color: var(--error-color);"></i>
+                    <span style="color: var(--error-color); font-weight: 600;">{{ error }}</span>
                 </div>
             </div>
-            <br>
-        </li>
-        {% endfor %}
-    </ul>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-    {% if num_molecules > num_display_molecules %}
-    <div class="download-remaining">
-        <p>... and {{ num_molecules - num_display_molecules }} more. Download for full predictions.</p>
-        <a class="download-results" href="{{ url_for('download_predictions') }}">
-            <button class="btn btn-primary">Download Results</button>
-        </a>
+        <hr style="border: none; height: 1px; background: var(--border-color); margin: 4rem 0;">
+
+        {% if predicted %}
+        <div class="fade-in">
+            <h2 class="section-title"><i class="fas fa-chart-bar me-2"></i>ADMET Analysis Results</h2>
+
+            <div class="modern-card p-4 mb-5">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div style="background: rgba(102, 126, 234, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Input Molecules</div>
+                            <div style="color: var(--primary-color); font-size: 1.8rem; font-weight: 700;">{{ "{:,}".format(num_molecules | default(0)) }}</div>
+                        </div>
+                        <div style="background: rgba(240, 147, 251, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Reference Dataset</div>
+                            <div style="color: var(--secondary-color); font-size: 1.8rem; font-weight: 700;">{{ "{:,}".format(drugbank_size | default(10000)) }}</div>
+                        </div>
+                        <div style="background: rgba(79, 209, 199, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">ATC Code</div>
+                            <div style="color: var(--accent-color); font-size: 1.2rem; font-weight: 600;">"{{ atc_code | default('all') }}"</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('download_predictions') }}" class="download-results btn btn-primary" style="background: var(--success-color); padding: 1rem 2rem;" aria-label="Download Results">
+                            <i class="fas fa-download me-2"></i>Download CSV
+                        </a>
+                        <a href="{{ url_for('download_pdf') }}" class="download-results btn btn-success" style="background: var(--primary-color); padding: 1rem 2rem;" aria-label="Download PDF Report" target="admet_report.html">
+                            <i class="fas fa-file-pdf me-2"></i>Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if drugbank_plot %}
+            <div class="collapse-section">
+                <button id="drugbank-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#drugbank" aria-expanded="false" aria-controls="drugbank">
+                    <div id="drugbank-arrow" class="arrow"></div>
+                    <strong class="dropdown-title"><i class="fas fa-chart-scatter me-2"></i>Interactive Summary Plot</strong>
+                </button>
+                <div id="drugbank" class="collapse">
+                    <div class="modern-card mt-3 p-4">
+                        <div class="d-flex gap-3 justify-content-center mb-4 flex-wrap">
+                            {% for axisType in ["x", "y"] %}
+                            <div class="dropdown" style="min-width: 300px;">
+                                <button type="button" class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center" 
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span><i class="fas fa-{{ 'arrows-alt-h' if axisType == 'x' else 'arrows-alt-v' }} me-2"></i>{{ axisType.upper() }}-Axis Property</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <div class="px-3 py-2">
+                                        <input class="form-control" id="drugbank-{{ axisType }}-axis-selection" type="text" placeholder="Search properties...">
+                                    </div>
+                                    <div class="dropdown-divider"></div>
+                                    <div style="max-height: 250px; overflow-y: auto;">
+                                        {% for task in drugbank_tasks | default([]) %}
+                                        <button class="dropdown-item drugbank-{{ axisType }}-axis-item" type="button">{{ task }}</button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div id="drugbank-plot" class="position-relative">
+                            <div id="drugbank-plot-inner" class="d-flex justify-content-center">
+                                <div id="plot-container" style="width: 100%; max-width: 1000px;">
+                                    {{ drugbank_plot | safe }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <h3 class="text-white my-5 text-center">
+                <i class="fas fa-microscope me-2" style="color: var(--accent-color);"></i>
+                Molecular Analysis Details
+            </h3>
+
+            <ul id="list" class="list-unstyled">
+                {% for smiles_index in range(num_display_molecules | default(0)) %}
+                {% set smiles = all_smiles[smiles_index] | default('') %}
+                <li class="molecule-prediction">
+                    <div class="molecule-card">
+                        <button class="collapse-button text-decoration-none w-100" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse-info-{{ smiles_index }}" aria-expanded="false"
+                                aria-controls="collapse-info-{{ smiles_index }}"
+                                style="background: transparent; border: none; padding: 0;">
+                            <div class="arrow" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);"></div>
+                            <div class="smiles-and-svg-container" style="padding-left: 4rem;">
+                                <div class="smiles-container">
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-flask me-2" style="color: var(--primary-color);"></i>Molecule {{ smiles_index + 1 }}
+                                    </div>
+                                    <div class="text-break" style="font-weight: 600;">{{ smiles }}</div>
+                                </div>
+                                <div class="molecule-svg-container">
+                                    <div class="radial-plot" data-bs-toggle="tooltip" data-bs-html="true" title="{{ radial_description_tooltip() }}">
+                                        {{ radial_svgs[smiles_index] | safe }}
+                                    </div>
+                                    <div class="mol-image" style="background: white; border-radius: 12px; padding: 0.5rem;">
+                                        {{ mol_svgs[smiles_index] | safe }}
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                        <div id="collapse-info-{{ smiles_index }}" class="collapse">
+                            <div class="prediction-container p-4" style="background: rgba(0,0,0,0.2);">
+                                {% for category in ["Physicochemical", "Absorption", "Distribution", "Metabolism", "Excretion", "Toxicity"] %}
+                                <div class="prediction-category-container mb-5">
+                                    <div class="prediction-header d-flex align-items-center mb-3">
+                                        <img src="{{ url_for('static', filename='images/' + category.lower() + '.jpg') }}" alt="{{ category }} properties icon" class="me-3" style="width: 40px; height: 40px; border-radius: 8px;"/>
+                                        <h3 class="table-header" style="color: var(--primary-color); font-size: 1.5rem; margin: 0;">{{ category }}</h3>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="prediction-table">
+                                            <thead>
+                                            <tr>
+                                                {% set value_name = "value" if category == "Physicochemical" else "prediction" %}
+                                                <th data-bs-toggle="tooltip" title="The {{ category.lower() }} property."><i class="fas fa-tag me-2"></i>Property</th>
+                                                <th data-bs-toggle="tooltip" title="{{ 'Value computed by RDKit.' if category == 'Physicochemical' else 'Prediction by Chemprop-RDKit.' }}"><i class="fas fa-{{ 'calculator' if category == 'Physicochemical' else 'brain' }} me-2"></i>{{ "Value" if category == "Physicochemical" else "Prediction" }}</th>
+                                                <th data-bs-toggle="tooltip" title="Percentile vs. DrugBank reference set ({{ atc_code | default('all') }})."><i class="fas fa-percentage me-2"></i>DB Percentile</th>
+                                                <th data-bs-toggle="tooltip" title="Units of the {{ value_name }}. '-' indicates a probability score."><i class="fas fa-ruler me-2"></i>Units</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% set category_info = admet_info[admet_info["category"] == category] | default([]) %}
+                                            {% for _, row in category_info.iterrows() %}
+                                            <tr>
+                                                <td><strong>
+                                                    <a href="{{ row['url'] | default('#') }}" target="_blank" class="data-link" style="color: var(--primary-color); text-decoration: none;">
+                                                        {{ row["name"] | default('Unknown') }}
+                                                    </a>
+                                                    {% if category != "Physicochemical" %}
+                                                        {% set first_metric = "AUROC" if row["task_type"] == "classification" else "R^2" %}
+                                                        {% set second_metric = "AUPRC" if row["task_type"] == "classification" else "MAE" %}
+                                                    <span class="fas fa-question-circle dataset-tooltip ms-2" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="right"
+                                                          title="Size: {{ '{:,.0f}'.format(row['size'] | default(0)) }}<br>
+                                                                 {{ 'Species: {}<br>'.format(row['species']) if row['species'] != '-' else '' }}
+                                                                 {{ string_to_html_sup('{}: {:.2f}'.format(first_metric, row[first_metric] | default(0))) | safe }}<br>
+                                                                 {{ string_to_html_sup('{}: {:.2f}'.format(second_metric, row[second_metric] | default(0))) | safe }}
+                                                                 {{ '<br>TDC Rank: {}'.format(row['tdc_rank']) if row['tdc_rank'] != '-' else '' }}"
+                                                          style="color: var(--accent-color);"></span>
+                                                    {% if row[first_metric] | default(0) < low_performance_threshold | default(0.5) %}
+                                                    <span class="fas fa-exclamation-triangle lower-accuracy-tooltip ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="Lower accuracy" style="color: var(--warning-color);"></span>
+                                                    {% endif %}
+                                                    {% endif %}
+                                                </strong></td>
+                                                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">
+                                                    {% set pred = smiles_to_property_id_to_pred[smiles][row["id"]] | default(0) %}
+                                                    {% set pred = min(max(pred, row["minimum"] | default(-1e6)), row["maximum"] | default(1e6)) %}
+                                                    <span style="color: var(--accent-color);">{{ ("{:.2f}" if pred|abs > 0.005 or pred == 0 else "{:.2e}").format(pred) }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div style="background: var(--gradient-primary); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 0.9rem;">
+                                                        {{ "{:.1f}".format(smiles_to_property_id_to_pred[smiles][row["id"] + "_" + drugbank_approved_percentile_suffix] | default(0)) }}%
+                                                    </div>
+                                                </td>
+                                                <td style="font-style: italic; color: var(--text-secondary);">
+                                                    {{ string_to_html_sup(row["units"] | default('-')) | safe }}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+
+            {% if num_molecules | default(0) > num_display_molecules | default(0) %}
+            <div class="modern-card download-remaining p-4 text-center mt-5">
+                <p style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 1.5rem;">
+                    <i class="fas fa-ellipsis-h me-2" style="color: var(--primary-color);"></i>
+                    ... and <strong style="color: var(--primary-color);">{{ (num_molecules | default(0)) - (num_display_molecules | default(0)) }}</strong> more molecules analyzed.
+                </p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="download-results btn btn-primary" href="{{ url_for('download_predictions') }}" style="background: var(--success-color); padding: 1rem 2rem; font-size: 1.1rem; text-decoration: none;" aria-label="Download Complete Results">
+                        <i class="fas fa-download me-2"></i>Download CSV
+                    </a>
+                    <a class="download-results btn btn-success" href="{{ url_for('download_pdf') }}" style="background: var(--primary-color); padding: 1rem 2rem; font-size: 1.1rem; text-decoration: none;" target="_blank" aria-label="Download PDF Report">
+                        <i class="fas fa-file-pdf me-2"></i>Download PDF Report
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-    {% endif %}
 
-</div>
+    <footer class="footer">
+        <div class="container-fluid">
+            <p class="footer-text">
+                <a href="#" style="color: var(--primary-color); font-weight: 600;">ChemXplore</a> is powered by advanced machine learning •
+                <a href="https://www.james-zou.com/" target="_blank">Stanford AI Lab</a> •
+                <a href="https://github.com/swansonk14/admet_ai" target="_blank"><i class="fab fa-github"></i> Source</a> •
+                <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030" target="_blank"><i class="fas fa-file-alt"></i> Paper</a> •
+                Version {{ version | default('1.0.0') }}
+            </p>
+        </div>
+    </footer>
 
-<nav class="navbar navbar-inverse navbar-fixed-bottom">
-    <div class="container-fluid">
-        <p class="footer-text"><a href="https://admet.ai.greenstonebio.com">ADMET-AI</a> is a
-            collaboration
-            between <a href="https://greenstonebio.com/" target="_blank">Greenstone Biosciences</a> and <a
-                    href="https://www.james-zou.com/" target="_blank">Prof. James Zou's lab</a> at Stanford University ©
-            2024. <a
-                    href="https://github.com/swansonk14/admet_ai" target="_blank">Code</a>. <a
-                    href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030?utm_source=authortollfreelink&utm_campaign=bioinformatics&utm_medium=email&guestAccessKey=f4fca1d2-49ec-4b10-b476-5aea3bf37045" target="_blank">Paper</a>. Version {{ version }}.</p>
-    </div>
-</nav>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
+    
+    <script src="{{ url_for('static', filename='scripts/predict.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // --- Caching Selectors ---
+            const $navbar = $('.navbar');
+            const $heroBackground = $('.hero-background');
+            const $featureCards = $('.feature-card');
+            const $moleculeForm = $('#molecule-form');
+            const $predictButton = $('#predict-button');
+            const $spinnerOverlay = $('#spinner-overlay');
+            const $atcSelectionInput = $('#atc-selection');
+            const $selectedAtcCode = $('#selected-atc-code');
+            const $drugbankSize = $('#drugbank-size');
+            const $drugbankPlotInner = $('#drugbank-plot-inner');
+
+            // --- CORE FUNCTIONALITY ---
+
+            // Heartbeat for session keep-alive
+            function sendHeartbeat() {
+                fetch('/heartbeat', { method: 'POST' })
+                    .catch(error => console.error('Heartbeat failed:', error));
+            }
+            const heartbeatFrequency = parseInt("{{ heartbeat_frequency | default(30) }}") * 1000;
+            if (heartbeatFrequency > 0) {
+                setInterval(sendHeartbeat, heartbeatFrequency);
+            } else {
+                console.warn('Invalid heartbeat frequency, heartbeat disabled');
+            }
+
+            // Bootstrap 5 Tooltip Initialization
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+            // --- UI/UX ENHANCEMENTS ---
+
+            $(window).on('scroll', function() {
+                // Navbar scroll effect
+                $navbar.toggleClass('scrolled', $(this).scrollTop() > 50);
+                
+                // Parallax effect for hero section
+                const scrolled = $(this).scrollTop();
+                $heroBackground.css('transform', 'translateY(' + (scrolled * 0.4) + 'px)');
+            });
+
+            // Staggered animation for feature cards
+            $featureCards.each(function(i) {
+                $(this).css('animation-delay', (i * 0.15) + 's');
+            });
+
+            // Debounced plot resizing
+            let resizeTimeout;
+            $(window).on('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    const plot = document.querySelector('#drugbank-plot-inner .js-plotly-plot');
+                    if (window.Plotly && plot) {
+                        Plotly.Plots.resize(plot);
+                    }
+                }, 250);
+            });
+
+            // --- EVENT HANDLERS ---
+            
+            // Loading animation on form submission
+            $moleculeForm.on('submit', function() {
+                $predictButton.addClass('loading');
+                $spinnerOverlay.fadeIn(300);
+            });
+
+            // Input type switching logic
+            $('input[name="input-type"]').on('change', function() {
+                const selectedType = $(this).val();
+                // Hide all forms first
+                $('#text-input-form, #file-input-form, #draw-input-form').hide();
+                
+                const formVisibility = {
+                    'text': '#text-input-form',
+                    'file': '#file-input-form',
+                    'draw': '#draw-input-form',
+                    'example': '#text-input-form'
+                };
+
+                if (formVisibility[selectedType]) {
+                    $(formVisibility[selectedType]).show();
+                }
+                
+                if (selectedType === 'example') {
+                    const exampleSmiles = "c1ccccc1\nCC(=O)Oc1ccccc1C(=O)O\nCN1C=NC2=C1C(=O)N(C)C(=O)N2C";
+                    $('#text-smiles-input').val(exampleSmiles);
+                }
+            });
+
+            // Event Delegation for all collapse buttons
+            $(document).on('click', '.collapse-button', function() {
+                $(this).find('.arrow').toggleClass('arrow-up');
+            });
+
+            // ATC code search (real-time filtering)
+            $atcSelectionInput.on('input', function() {
+                const searchText = $(this).val().toLowerCase();
+                $('.atc-item').each(function() {
+                    const itemText = $(this).text().toLowerCase();
+                    $(this).toggle(itemText.includes(searchText));
+                });
+            });
+
+            // ATC code selection
+            $('.atc-item').on('click', function() {
+                const selectedCode = $(this).text().trim();
+                $selectedAtcCode.text(`"${selectedCode}"`);
+                $(this).closest('.dropdown-menu').prev('.dropdown-toggle').dropdown('toggle');
+
+                fetch(`/get_drugbank_size?atc_code=${encodeURIComponent(selectedCode)}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok.');
+                        return response.json();
+                    })
+                    .then(data => {
+                        $drugbankSize.text(`${data.size.toLocaleString()} molecules`);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching DrugBank size:', error);
+                        $drugbankSize.text('Error loading size');
+                    });
+            });
+            
+            // Function to update the interactive plot
+            function updatePlot() {
+                const xProperty = $('#drugbank-x-axis-selection').val();
+                const yProperty = $('#drugbank-y-axis-selection').val();
+
+                if (!xProperty || !yProperty) return;
+
+                $drugbankPlotInner.html('<div class="d-flex justify-content-center align-items-center" style="height: 300px;"><div class="spinner"></div></div>'); // Show a spinner
+
+                fetch(`/update_drugbank_plot?x_axis=${encodeURIComponent(xProperty)}&y_axis=${encodeURIComponent(yProperty)}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok.');
+                        return response.json();
+                    })
+                    .then(data => {
+                        $drugbankPlotInner.html(data.plot_html);
+                        // Plotly takes a moment to render, so we re-run resize after a short delay
+                        setTimeout(() => $(window).trigger('resize'), 100);
+                    })
+                    .catch(error => {
+                        console.error('Error updating plot:', error);
+                        $drugbankPlotInner.html('<div class="alert alert-danger">Could not load plot. Please try again.</div>');
+                    });
+            }
+
+            // DrugBank plot axis search and selection
+            $('.drugbank-x-axis-item, .drugbank-y-axis-item').on('click', function() {
+                const selectedProperty = $(this).text().trim();
+                const axis = $(this).hasClass('drugbank-x-axis-item') ? 'x' : 'y';
+                $(`#drugbank-${axis}-axis-selection`).val(selectedProperty);
+                $(this).closest('.dropdown-menu').prev('.dropdown-toggle').dropdown('toggle');
+                updatePlot();
+            });
+
+            // Filter logic for plot axis dropdowns
+            $('#drugbank-x-axis-selection, #drugbank-y-axis-selection').on('input', function() {
+                const searchText = $(this).val().toLowerCase();
+                const axis = $(this).attr('id').includes('x-axis') ? 'x' : 'y';
+                $(`.drugbank-${axis}-axis-item`).each(function() {
+                    const itemText = $(this).text().toLowerCase();
+                    $(this).toggle(itemText.includes(searchText));
+                });
+            });
+        });
+    </script>
 </body>
 </html>

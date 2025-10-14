@@ -1,0 +1,312 @@
+{% if is_web_display %}
+    {% extends "base.html" %}
+    {% block content %}
+    <div class="container">
+        <h2 class="text-primary mb-4" data-aos="fade-down">
+            Comprehensive ADMET Analysis Results
+        </h2>
+{% else %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMET Prediction Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            color: #666;
+        }
+        
+        .summary-section {
+            margin-bottom: 30px;
+        }
+        
+        .summary-plot {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .summary-plot img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .molecule-section {
+            page-break-inside: avoid;
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        
+        .molecule-header {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: -15px -15px 15px -15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .molecule-header h3 {
+            margin: 0;
+            color: #007bff;
+            font-size: 16px;
+        }
+        
+        .smiles {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 3px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        
+        .table-container {
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .property-name {
+            font-weight: bold;
+            width: 40%;
+        }
+        
+        .prediction-value {
+            width: 20%;
+            text-align: right;
+        }
+        
+        .units {
+            width: 20%;
+            text-align: center;
+        }
+        
+        .percentile {
+            width: 20%;
+            text-align: right;
+        }
+        
+        .radial-plot {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .radial-plot img {
+            max-width: 200px;
+            height: auto;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+{% endif %}
+
+{% if is_web_display %}
+    <!-- Web-specific styles -->
+    <style>
+        .molecule-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .table-container {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .summary-plot img {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .radial-plot img {
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+{% endif %}
+
+{% if not is_web_display %}
+<div class="header">
+    <h1>ADMET Prediction Report</h1>
+    <p>Generated on: {{ timestamp }}</p>
+    <p>ATC Code: {{ atc_code or 'All' }} | Reference Size: {{ "{:,}".format(drugbank_size) }}</p>
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle me-2"></i>Analysis Summary</h5>
+            <p class="mb-1"><strong>Generated:</strong> {{ timestamp }}</p>
+            <p class="mb-1"><strong>ATC Code:</strong> {{ atc_code or 'All' }}</p>
+            <p class="mb-0"><strong>Reference Dataset Size:</strong> {{ "{:,}".format(drugbank_size) }} molecules</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if summary_plot_b64 %}
+<div class="summary-section">
+    {% if is_web_display %}
+    <h4 class="text-primary mb-3"><i class="fas fa-chart-scatter me-2"></i>Summary Plot</h4>
+    {% else %}
+    <h2>Summary Plot</h2>
+    {% endif %}
+    <div class="summary-plot">
+        <img src="data:image/png;base64,{{ summary_plot_b64 }}" alt="Summary Plot">
+    </div>
+</div>
+{% endif %}
+
+{% for idx, molecule in molecules.items() %}
+<div class="molecule-section">
+    <div class="molecule-header">
+        <h3>Molecule {{ loop.index }}</h3>
+    </div>
+    
+    <div class="smiles">
+        <strong>SMILES:</strong> {{ molecule.smiles }}
+    </div>
+    
+    <div class="table-container">
+        <h4>Physicochemical Properties</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th class="property-name">Property</th>
+                    <th class="prediction-value">Value</th>
+                    <th class="units">Units</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prop, value in molecule.physchem.items() %}
+                <tr>
+                    <td class="property-name">{{ prop.replace('_', ' ').title() }}</td>
+                    <td class="prediction-value">{{ "{:.3f}".format(value) }}</td>
+                    <td class="units">{{ physchem_units.get(prop, '-') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <h4>ADMET Predictions</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th class="property-name">Property</th>
+                    <th class="prediction-value">Prediction</th>
+                    <th class="units">Units</th>
+                    <th class="percentile">DrugBank Percentile (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prop, data in molecule.admet.items() %}
+                <tr>
+                    <td class="property-name">{{ prop.replace('_', ' ').title() }}</td>
+                    <td class="prediction-value">{{ "{:.3f}".format(data.prediction) }}</td>
+                    <td class="units">{{ data.units }}</td>
+                    <td class="percentile">{{ "{:.1f}".format(data.percentile) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if molecule.radial_plot_b64 %}
+    <div class="radial-plot">
+        <h4>Radial Summary</h4>
+        <img src="data:image/png;base64,{{ molecule.radial_plot_b64 }}" alt="Radial Plot">
+    </div>
+    {% endif %}
+</div>
+
+{% if not loop.last %}
+<div class="page-break"></div>
+{% endif %}
+{% endfor %}
+
+{% if is_web_display %}
+    <!-- Export Options for Web Display -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('download_predictions') }}" 
+               class="btn btn-primary me-3" 
+               data-aos="fade-up" 
+               data-aos-delay="200">
+                <i class="fas fa-download me-2"></i>
+                Download Results (CSV)
+            </a>
+            <a href="{{ url_for('download_pdf') }}" 
+               class="btn btn-success" 
+               data-aos="fade-up" 
+               data-aos-delay="250"
+               target="_blank">
+                <i class="fas fa-file-pdf me-2"></i>
+                Download PDF Report
+            </a>
+        </div>
+    </div>
+    </div>  <!-- closes .container -->
+    {% endblock %}
+{% else %}
+    <div class="footer">
+        <p>Report generated by ADMET-AI | {{ timestamp }}</p>
+    </div>
+</body>
+</html>
+{% endif %}
