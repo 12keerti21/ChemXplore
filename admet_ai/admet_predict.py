@@ -6,6 +6,7 @@ from tap import tapify
 
 from admet_ai import ADMETModel
 from admet_ai.constants import DEFAULT_DRUGBANK_PATH, DEFAULT_MODELS_DIR
+from admet_ai.medchem import compute_medchem_properties
 from admet_ai.utils import load_and_preprocess_data
 
 
@@ -19,6 +20,7 @@ def admet_predict(
     smiles_column: str = "smiles",
     num_workers: int | None = None,
     no_cache_molecules: bool = True,
+    include_medchem: bool = False,
 ) -> None:
     """Make predictions on a dataset using Chemprop-RDKit models trained on TDC ADMET data.
 
@@ -37,7 +39,8 @@ def admet_predict(
                         If None, defaults to 0 if no GPU is available and 8 if a GPU is available.
     :param no_cache_molecules: Whether to not cache molecules.
                                Caching improves prediction speed but requires more memory.
-
+    :param include_medchem: Whether to add drug-likeness rules, structural alerts, synthetic accessibility
+                            and BOILED-Egg columns.
     """
     # Load and preprocess data
     data = load_and_preprocess_data(data_path=data_path, smiles_column=smiles_column)
@@ -54,6 +57,11 @@ def admet_predict(
 
     # Make predictions
     preds = model.predict(smiles=list(data.index))
+
+    if include_medchem:
+        medchem = compute_medchem_properties(all_smiles=list(preds.index))
+        for column in medchem.columns:
+            preds[column] = medchem[column].values
 
     # Merge data and preds
     data_with_preds = pd.concat((data, preds), axis=1)

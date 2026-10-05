@@ -1,0 +1,141 @@
+/* Result blocks from results_macros.html. Pages override the --cx-* variables to fit their theme. */
+:root {
+    --cx-text: #1f2933;
+    --cx-muted: #616e7c;
+    --cx-border: #d9dee5;
+    --cx-row-alt: #f5f7fa;
+    --cx-link: #4c51bf;
+    --cx-low-bg: #def7ec;
+    --cx-low-fg: #03543f;
+    --cx-medium-bg: #fdf6b2;
+    --cx-medium-fg: #723b13;
+    --cx-high-bg: #fde8e8;
+    --cx-high-fg: #9b1c1c;
+}
+
+.cx-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--cx-text);
+    font-size: 0.92rem;
+}
+
+.cx-table th,
+.cx-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--cx-border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.cx-table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cx-table tbody tr:nth-child(even) {
+    background: var(--cx-row-alt);
+}
+
+.cx-table a {
+    color: var(--cx-link);
+    text-decoration: none;
+}
+
+.cx-table a:hover {
+    text-decoration: underline;
+}
+
+.cx-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.cx-muted {
+    color: var(--cx-muted);
+}
+
+.cx-badge {
+    display: inline-block;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cx-low { background: var(--cx-low-bg); color: var(--cx-low-fg); }
+.cx-medium { background: var(--cx-medium-bg); color: var(--cx-medium-fg); }
+.cx-high { background: var(--cx-high-bg); color: var(--cx-high-fg); }
+
+.cx-risk-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.cx-alerts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 1rem;
+}
+
+.cx-alert {
+    margin: 0;
+    border: 1px solid var(--cx-border);
+    border-radius: 10px;
+    padding: 0.5rem;
+    color: var(--cx-text);
+    font-size: 0.85rem;
+}
+
+.cx-alert-svg {
+    background: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+}
+
+.cx-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.cx-panel h4 {
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+}
+
+.cx-plot {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 0.5rem;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.cx-structure {
+    background: #ffffff;
+    border-radius: 8px;
+    width: 96px;
+    height: 96px;
+}
+
+.cx-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.cx-sortable::after {
+    content: " \2195";
+    opacity: 0.4;
+}
+
+.cx-sorted-asc::after { content: " \2191"; opacity: 1; }
+.cx-sorted-desc::after { content: " \2193"; opacity: 1; }
+
+@media (max-width: 600px) {
+    .cx-table th,
+    .cx-table td {
+        padding: 0.4rem;
+    }
+}

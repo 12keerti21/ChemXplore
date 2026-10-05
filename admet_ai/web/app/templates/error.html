@@ -1,23 +1,14 @@
-{% extends "base.html" %}
+{% extends "page_layout.html" %}
+
+{% block title %}ChemXplore - Error{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="alert alert-danger text-center" role="alert">
-                <h4 class="alert-heading">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Error
-                </h4>
-                <p>{{ message }}</p>
-                <hr>
-                <p class="mb-0">
-                    <a href="{{ url_for('index') }}" class="btn btn-primary">
-                        <i class="fas fa-home me-2"></i>
-                        Return to Home
-                    </a>
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
+<header class="page-header">
+    <h1><span class="brand">ChemXplore</span></h1>
+</header>
+<section class="card" role="alert">
+    <h2>Something went wrong</h2>
+    <p>{{ message }}</p>
+    <a class="button" href="{{ url_for('index') }}">Return to home</a>
+</section>
 {% endblock %}

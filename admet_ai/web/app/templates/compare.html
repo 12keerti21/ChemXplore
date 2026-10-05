@@ -1,0 +1,140 @@
+{% extends "page_layout.html" %}
+{% import 'results_macros.html' as results %}
+
+{% block title %}ChemXplore Comparison{% endblock %}
+
+{% block head %}
+<style>
+    .compare-table th:first-child,
+    .compare-table td:first-child {
+        min-width: 200px;
+    }
+
+    .compare-table .section-row td {
+        background: #eef0fb;
+        font-weight: 700;
+    }
+
+    .compare-structure {
+        width: 180px;
+        height: 180px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1><span class="brand">ChemXplore</span> Comparison</h1>
+        <div class="cx-muted">Molecules {{ molecules | map(attribute="number") | join(", ") }} &middot; DrugBank reference: {{ atc_code }}</div>
+    </div>
+    <div class="toolbar no-print">
+        <button class="button" type="button" onclick="window.print()">Print</button>
+    </div>
+</header>
+
+{% set levels = {"low": "OK", "medium": "Caution", "high": "Risk"} %}
+<section class="card" style="overflow-x: auto;">
+    <table class="cx-table compare-table">
+        <thead>
+        <tr>
+            <th></th>
+            {% for molecule in molecules %}
+            <th>Molecule {{ molecule.number }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Structure</td>
+            {% for molecule in molecules %}
+            <td><div class="compare-structure">{{ molecule.mol_svg | safe }}</div></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td>DrugBank percentiles</td>
+            {% for molecule in molecules %}
+            <td><div class="compare-structure">{{ molecule.radial_svg | safe }}</div></td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td>SMILES</td>
+            {% for molecule in molecules %}
+            <td class="smiles">{{ molecule.smiles }}</td>
+            {% endfor %}
+        </tr>
+
+        <tr class="section-row"><td colspan="{{ molecules | length + 1 }}">Risk summary</td></tr>
+        <tr>
+            <td>Risk score (lower is better)</td>
+            {% for molecule in molecules %}
+            <td class="cx-mono">{{ molecule.risk_score }}</td>
+            {% endfor %}
+        </tr>
+        {% for flag in molecules[0].risk_flags %}
+        <tr>
+            <td>{{ flag.label }}</td>
+            {% for molecule in molecules %}
+            {% set other = molecule.risk_flags | selectattr("key", "equalto", flag.key) | first %}
+            <td><span class="cx-badge cx-{{ other.level }}">{{ levels[other.level] }}</span> <span class="cx-mono">{{ other.value }}</span></td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+
+        <tr class="section-row"><td colspan="{{ molecules | length + 1 }}">Medicinal chemistry</td></tr>
+        {% for rule in rule_names %}
+        <tr>
+            <td>{{ rule }} rule</td>
+            {% for molecule in molecules %}
+            {% set violations = molecule.medchem.rules[rule] %}
+            <td>
+                <span class="cx-badge cx-{{ 'low' if not violations else ('medium' if violations | length == 1 else 'high') }}">{{ "Pass" if not violations else "Fail" }}</span>
+                {% if violations %}<span class="cx-muted">{{ violations | join(", ") }}</span>{% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        <tr>
+            <td>Synthetic accessibility</td>
+            {% for molecule in molecules %}
+            <td class="cx-mono">{{ "{:.2f}".format(molecule.medchem.sa_score) }}</td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td>Structural alerts</td>
+            {% for molecule in molecules %}
+            <td>{{ molecule.medchem.alerts | map(attribute="description") | join(", ") or "None" }}</td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td>BOILED-Egg GI absorption / brain</td>
+            {% for molecule in molecules %}
+            <td>{{ "High" if molecule.medchem.boiled_egg.gi_absorption else "Low" }} / {{ "Yes" if molecule.medchem.boiled_egg.bbb_permeant else "No" }}</td>
+            {% endfor %}
+        </tr>
+        <tr>
+            <td>Closest approved drug</td>
+            {% for molecule in molecules %}
+            {% set drug = molecule.similar_drugs[0] %}
+            <td><a href="{{ drug.url }}" target="_blank" rel="noopener">{{ drug.name }}</a> <span class="cx-muted">({{ "{:.2f}".format(drug.similarity) }})</span></td>
+            {% endfor %}
+        </tr>
+
+        {% for category in admet_categories %}
+        <tr class="section-row"><td colspan="{{ molecules | length + 1 }}">{{ category }} <span class="cx-muted" style="font-weight: 400;">(value, DrugBank percentile)</span></td></tr>
+        {% for _, row in admet_info[admet_info["category"] == category].iterrows() %}
+        <tr>
+            <td>{{ row["name"] }} <span class="cx-muted">{{ string_to_html_sup(row["units"]) | safe if row["units"] != "-" else "" }}</span></td>
+            {% for molecule in molecules %}
+            <td class="cx-mono">
+                {{ results.format_value(molecule.properties[row["id"]]) }}
+                <span class="cx-muted">{{ "{:.0f}".format(molecule.properties[row["id"] + "_" + percentile_suffix]) }}%</span>
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

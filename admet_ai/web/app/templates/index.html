@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-{% from 'macros.html' import chemdraw, error_message, warning_message, radial_description_list,
-radial_description_tooltip %}
+{% from 'macros.html' import chemdraw, radial_description_tooltip %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -12,8 +11,9 @@ radial_description_tooltip %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@3-00;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}">
     <title>ChemXplore - Advanced Molecular Analysis Platform</title>
 
     <style>
@@ -35,6 +35,43 @@ radial_description_tooltip %}
             --shadow-heavy: 0 10px 40px rgba(0, 0, 0, 0.4);
             --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             --gradient-dark: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            --cx-text: var(--text-primary);
+            --cx-muted: var(--text-secondary);
+            --cx-border: var(--border-color);
+            --cx-row-alt: rgba(255, 255, 255, 0.03);
+            --cx-link: #a3bffa;
+            --cx-low-bg: rgba(72, 187, 120, 0.2);
+            --cx-low-fg: #9ae6b4;
+            --cx-medium-bg: rgba(237, 137, 54, 0.2);
+            --cx-medium-fg: #fbd38d;
+            --cx-high-bg: rgba(245, 101, 101, 0.22);
+            --cx-high-fg: #feb2b2;
+        }
+
+        .stat-tile {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .molecule-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .molecule-section h4 {
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         body, div, p, h1, h2, h3, a, button, input, textarea {
@@ -640,6 +677,27 @@ radial_description_tooltip %}
             box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
         }
 
+        .form-control::placeholder,
+        textarea::placeholder {
+            color: var(--text-secondary);
+            opacity: 1;
+        }
+
+        .form-select {
+            background-color: var(--dark-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+
+        .form-check-label {
+            color: var(--text-primary);
+        }
+
         /* --- FIX: ALLOW DROPDOWN TO BE VISIBLE OUTSIDE CARD --- */
         #drugbank .modern-card {
             overflow: visible;
@@ -810,9 +868,9 @@ radial_description_tooltip %}
             </button>
             <div id="local-text" class="collapse">
                 <div class="modern-card" style="margin-top: 1rem; padding: 2rem;">
-                    <p>ChemXplore can be deployed locally as a <strong>command line tool</strong> for high-throughput batch processing or integrated as a <strong>Python module</strong> within existing drug discovery pipelines.</p>
+                    <p>ChemXplore can be deployed locally as a <strong>command line tool</strong> for high-throughput batch processing, integrated as a <strong>Python module</strong>, or called over HTTP through its <strong>JSON API</strong> (<code>POST /api/predict</code>).</p>
                     <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; margin: 1rem 0;">
-                        <code>pip install chemxplore</code>
+                        <code>git clone https://github.com/12keerti21/ChemXplore.git<br>cd ChemXplore<br>pip install -e ".[web]"<br>admet_web</code>
                     </div>
                 </div>
             </div>
@@ -840,6 +898,9 @@ radial_description_tooltip %}
                         <input type="radio" class="btn-check" name="input-type" id="draw-radio" value="draw" autocomplete="off">
                         <label class="btn btn-primary" for="draw-radio"><i class="fas fa-pencil-alt"></i> Draw</label>
                         
+                        <input type="radio" class="btn-check" name="input-type" id="name-radio" value="name" autocomplete="off">
+                        <label class="btn btn-primary" for="name-radio"><i class="fas fa-search"></i> Name</label>
+
                         <input type="radio" class="btn-check" name="input-type" id="example-radio" value="example" autocomplete="off">
                         <label class="btn btn-primary" for="example-radio"><i class="fas fa-vial"></i> Example</label>
                     </div>
@@ -851,13 +912,20 @@ radial_description_tooltip %}
                         <textarea id="text-smiles-input" name="text-smiles" rows="10" placeholder="Enter SMILES strings here, one per line..." style="min-height: 200px;" required>{{ text_smiles | default('') }}</textarea>
                     </div>
                     
+                    <div id="name-input-form" style="display: none;">
+                        <label for="text-names-input" class="form-label d-flex align-items-center mb-2">
+                            <i class="fas fa-search me-2" style="color: var(--accent-color);"></i>Compound names (one per line), looked up on PubChem
+                        </label>
+                        <textarea id="text-names-input" name="text-names" rows="6" placeholder="ibuprofen&#10;caffeine&#10;atorvastatin" style="min-height: 150px;"></textarea>
+                    </div>
+
                     <div id="file-input-form" style="display: none;">
                         <label for="file-smiles-input" class="form-label d-flex align-items-center mb-2">
                             <i class="fas fa-file-csv me-2" style="color: var(--accent-color);"></i>CSV file containing SMILES
                         </label>
                         <div class="d-flex gap-3 align-items-end flex-wrap">
                             <div class="flex-grow-1">
-                                <input id="file-smiles-input" type="file" name="data" accept=".csv" class="form-control" style="border-style: dashed; background: rgba(102, 126, 234, 0.1);">
+                                <input id="file-smiles-input" type="file" name="data" accept=".csv,text/csv" class="form-control" style="border-style: dashed; background: rgba(102, 126, 234, 0.1);">
                             </div>
                             <div>
                                 <label for="file-smiles-column" class="form-label" style="font-size: 0.9rem; margin-bottom: 0.5rem;">SMILES Column:</label>
@@ -894,7 +962,7 @@ radial_description_tooltip %}
                     <div class="d-flex align-items-center gap-3 flex-wrap">
                         <div style="background: rgba(255,255,255,0.1); padding: 0.8rem 1.2rem; border-radius: 8px;">
                             <strong style="color: var(--text-primary);">Selected ATC:</strong> 
-                            <span id="selected-atc-code" style="color: var(--secondary-color); font-weight: 600;">"{{ atc_code | default('all') }}"</span>
+                            <span id="selected-atc-code" style="color: var(--secondary-color); font-weight: 600;">{{ atc_code | default('all') }}</span>
                         </div>
                         <div style="background: rgba(79, 209, 199, 0.2); padding: 0.8rem 1.2rem; border-radius: 8px;">
                             <strong style="color: var(--text-primary);">Dataset Size:</strong> 
@@ -902,6 +970,8 @@ radial_description_tooltip %}
                         </div>
                     </div>
                 </div>
+
+                <p id="atc-rerun-note" class="cx-muted" style="display: none;">The new reference applies to your next prediction.</p>
 
                 <div class="dropdown">
                     <button type="button" class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Select ATC Code">
@@ -951,198 +1021,7 @@ radial_description_tooltip %}
         <hr style="border: none; height: 1px; background: var(--border-color); margin: 4rem 0;">
 
         {% if predicted %}
-        <div class="fade-in">
-            <h2 class="section-title"><i class="fas fa-chart-bar me-2"></i>ADMET Analysis Results</h2>
-
-            <div class="modern-card p-4 mb-5">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex gap-3 flex-wrap">
-                        <div style="background: rgba(102, 126, 234, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Input Molecules</div>
-                            <div style="color: var(--primary-color); font-size: 1.8rem; font-weight: 700;">{{ "{:,}".format(num_molecules | default(0)) }}</div>
-                        </div>
-                        <div style="background: rgba(240, 147, 251, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Reference Dataset</div>
-                            <div style="color: var(--secondary-color); font-size: 1.8rem; font-weight: 700;">{{ "{:,}".format(drugbank_size | default(10000)) }}</div>
-                        </div>
-                        <div style="background: rgba(79, 209, 199, 0.1); padding: 1rem 1.5rem; border-radius: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">ATC Code</div>
-                            <div style="color: var(--accent-color); font-size: 1.2rem; font-weight: 600;">"{{ atc_code | default('all') }}"</div>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="{{ url_for('download_predictions') }}" class="download-results btn btn-primary" style="background: var(--success-color); padding: 1rem 2rem;" aria-label="Download Results">
-                            <i class="fas fa-download me-2"></i>Download CSV
-                        </a>
-                        <a href="{{ url_for('download_pdf') }}" class="download-results btn btn-success" style="background: var(--primary-color); padding: 1rem 2rem;" aria-label="Download PDF Report" target="admet_report.html">
-                            <i class="fas fa-file-pdf me-2"></i>Download PDF
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            {% if drugbank_plot %}
-            <div class="collapse-section">
-                <button id="drugbank-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#drugbank" aria-expanded="false" aria-controls="drugbank">
-                    <div id="drugbank-arrow" class="arrow"></div>
-                    <strong class="dropdown-title"><i class="fas fa-chart-scatter me-2"></i>Interactive Summary Plot</strong>
-                </button>
-                <div id="drugbank" class="collapse">
-                    <div class="modern-card mt-3 p-4">
-                        <div class="d-flex gap-3 justify-content-center mb-4 flex-wrap">
-                            {% for axisType in ["x", "y"] %}
-                            <div class="dropdown" style="min-width: 300px;">
-                                <button type="button" class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center" 
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span><i class="fas fa-{{ 'arrows-alt-h' if axisType == 'x' else 'arrows-alt-v' }} me-2"></i>{{ axisType.upper() }}-Axis Property</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <div class="px-3 py-2">
-                                        <input class="form-control" id="drugbank-{{ axisType }}-axis-selection" type="text" placeholder="Search properties...">
-                                    </div>
-                                    <div class="dropdown-divider"></div>
-                                    <div style="max-height: 250px; overflow-y: auto;">
-                                        {% for task in drugbank_tasks | default([]) %}
-                                        <button class="dropdown-item drugbank-{{ axisType }}-axis-item" type="button">{{ task }}</button>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <div id="drugbank-plot" class="position-relative">
-                            <div id="drugbank-plot-inner" class="d-flex justify-content-center">
-                                <div id="plot-container" style="width: 100%; max-width: 1000px;">
-                                    {{ drugbank_plot | safe }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <h3 class="text-white my-5 text-center">
-                <i class="fas fa-microscope me-2" style="color: var(--accent-color);"></i>
-                Molecular Analysis Details
-            </h3>
-
-            <ul id="list" class="list-unstyled">
-                {% for smiles_index in range(num_display_molecules | default(0)) %}
-                {% set smiles = all_smiles[smiles_index] | default('') %}
-                <li class="molecule-prediction">
-                    <div class="molecule-card">
-                        <button class="collapse-button text-decoration-none w-100" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#collapse-info-{{ smiles_index }}" aria-expanded="false"
-                                aria-controls="collapse-info-{{ smiles_index }}"
-                                style="background: transparent; border: none; padding: 0;">
-                            <div class="arrow" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);"></div>
-                            <div class="smiles-and-svg-container" style="padding-left: 4rem;">
-                                <div class="smiles-container">
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                                        <i class="fas fa-flask me-2" style="color: var(--primary-color);"></i>Molecule {{ smiles_index + 1 }}
-                                    </div>
-                                    <div class="text-break" style="font-weight: 600;">{{ smiles }}</div>
-                                </div>
-                                <div class="molecule-svg-container">
-                                    <div class="radial-plot" data-bs-toggle="tooltip" data-bs-html="true" title="{{ radial_description_tooltip() }}">
-                                        {{ radial_svgs[smiles_index] | safe }}
-                                    </div>
-                                    <div class="mol-image" style="background: white; border-radius: 12px; padding: 0.5rem;">
-                                        {{ mol_svgs[smiles_index] | safe }}
-                                    </div>
-                                </div>
-                            </div>
-                        </button>
-                        <div id="collapse-info-{{ smiles_index }}" class="collapse">
-                            <div class="prediction-container p-4" style="background: rgba(0,0,0,0.2);">
-                                {% for category in ["Physicochemical", "Absorption", "Distribution", "Metabolism", "Excretion", "Toxicity"] %}
-                                <div class="prediction-category-container mb-5">
-                                    <div class="prediction-header d-flex align-items-center mb-3">
-                                        <img src="{{ url_for('static', filename='images/' + category.lower() + '.jpg') }}" alt="{{ category }} properties icon" class="me-3" style="width: 40px; height: 40px; border-radius: 8px;"/>
-                                        <h3 class="table-header" style="color: var(--primary-color); font-size: 1.5rem; margin: 0;">{{ category }}</h3>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="prediction-table">
-                                            <thead>
-                                            <tr>
-                                                {% set value_name = "value" if category == "Physicochemical" else "prediction" %}
-                                                <th data-bs-toggle="tooltip" title="The {{ category.lower() }} property."><i class="fas fa-tag me-2"></i>Property</th>
-                                                <th data-bs-toggle="tooltip" title="{{ 'Value computed by RDKit.' if category == 'Physicochemical' else 'Prediction by Chemprop-RDKit.' }}"><i class="fas fa-{{ 'calculator' if category == 'Physicochemical' else 'brain' }} me-2"></i>{{ "Value" if category == "Physicochemical" else "Prediction" }}</th>
-                                                <th data-bs-toggle="tooltip" title="Percentile vs. DrugBank reference set ({{ atc_code | default('all') }})."><i class="fas fa-percentage me-2"></i>DB Percentile</th>
-                                                <th data-bs-toggle="tooltip" title="Units of the {{ value_name }}. '-' indicates a probability score."><i class="fas fa-ruler me-2"></i>Units</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% set category_info = admet_info[admet_info["category"] == category] | default([]) %}
-                                            {% for _, row in category_info.iterrows() %}
-                                            <tr>
-                                                <td><strong>
-                                                    <a href="{{ row['url'] | default('#') }}" target="_blank" class="data-link" style="color: var(--primary-color); text-decoration: none;">
-                                                        {{ row["name"] | default('Unknown') }}
-                                                    </a>
-                                                    {% if category != "Physicochemical" %}
-                                                        {% set first_metric = "AUROC" if row["task_type"] == "classification" else "R^2" %}
-                                                        {% set second_metric = "AUPRC" if row["task_type"] == "classification" else "MAE" %}
-                                                    <span class="fas fa-question-circle dataset-tooltip ms-2" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="right"
-                                                          title="Size: {{ '{:,.0f}'.format(row['size'] | default(0)) }}<br>
-                                                                 {{ 'Species: {}<br>'.format(row['species']) if row['species'] != '-' else '' }}
-                                                                 {{ string_to_html_sup('{}: {:.2f}'.format(first_metric, row[first_metric] | default(0))) | safe }}<br>
-                                                                 {{ string_to_html_sup('{}: {:.2f}'.format(second_metric, row[second_metric] | default(0))) | safe }}
-                                                                 {{ '<br>TDC Rank: {}'.format(row['tdc_rank']) if row['tdc_rank'] != '-' else '' }}"
-                                                          style="color: var(--accent-color);"></span>
-                                                    {% if row[first_metric] | default(0) < low_performance_threshold | default(0.5) %}
-                                                    <span class="fas fa-exclamation-triangle lower-accuracy-tooltip ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="Lower accuracy" style="color: var(--warning-color);"></span>
-                                                    {% endif %}
-                                                    {% endif %}
-                                                </strong></td>
-                                                <td style="font-family: 'JetBrains Mono', monospace; font-weight: 500;">
-                                                    {% set pred = smiles_to_property_id_to_pred[smiles][row["id"]] | default(0) %}
-                                                    {% set pred = min(max(pred, row["minimum"] | default(-1e6)), row["maximum"] | default(1e6)) %}
-                                                    <span style="color: var(--accent-color);">{{ ("{:.2f}" if pred|abs > 0.005 or pred == 0 else "{:.2e}").format(pred) }}</span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <div style="background: var(--gradient-primary); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 0.9rem;">
-                                                        {{ "{:.1f}".format(smiles_to_property_id_to_pred[smiles][row["id"] + "_" + drugbank_approved_percentile_suffix] | default(0)) }}%
-                                                    </div>
-                                                </td>
-                                                <td style="font-style: italic; color: var(--text-secondary);">
-                                                    {{ string_to_html_sup(row["units"] | default('-')) | safe }}
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
-
-            {% if num_molecules | default(0) > num_display_molecules | default(0) %}
-            <div class="modern-card download-remaining p-4 text-center mt-5">
-                <p style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 1.5rem;">
-                    <i class="fas fa-ellipsis-h me-2" style="color: var(--primary-color);"></i>
-                    ... and <strong style="color: var(--primary-color);">{{ (num_molecules | default(0)) - (num_display_molecules | default(0)) }}</strong> more molecules analyzed.
-                </p>
-                <div class="d-flex gap-3 justify-content-center">
-                    <a class="download-results btn btn-primary" href="{{ url_for('download_predictions') }}" style="background: var(--success-color); padding: 1rem 2rem; font-size: 1.1rem; text-decoration: none;" aria-label="Download Complete Results">
-                        <i class="fas fa-download me-2"></i>Download CSV
-                    </a>
-                    <a class="download-results btn btn-success" href="{{ url_for('download_pdf') }}" style="background: var(--primary-color); padding: 1rem 2rem; font-size: 1.1rem; text-decoration: none;" target="_blank" aria-label="Download PDF Report">
-                        <i class="fas fa-file-pdf me-2"></i>Download PDF Report
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-        </div>
+        {% include 'results_section.html' %}
         {% endif %}
     </div>
 
@@ -1151,7 +1030,8 @@ radial_description_tooltip %}
             <p class="footer-text">
                 <a href="#" style="color: var(--primary-color); font-weight: 600;">ChemXplore</a> is powered by advanced machine learning •
                 <a href="https://www.james-zou.com/" target="_blank">Stanford AI Lab</a> •
-                <a href="https://github.com/swansonk14/admet_ai" target="_blank"><i class="fab fa-github"></i> Source</a> •
+                <a href="https://github.com/12keerti21/ChemXplore" target="_blank"><i class="fab fa-github"></i> Source</a> •
+                Built on <a href="https://github.com/swansonk14/admet_ai" target="_blank">ADMET-AI</a> •
                 <a href="https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030" target="_blank"><i class="fas fa-file-alt"></i> Paper</a> •
                 Version {{ version | default('1.0.0') }}
             </p>
@@ -1159,181 +1039,13 @@ radial_description_tooltip %}
     </footer>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-    
-    <script src="{{ url_for('static', filename='scripts/predict.js') }}"></script>
     <script>
-        $(document).ready(function() {
-            // --- Caching Selectors ---
-            const $navbar = $('.navbar');
-            const $heroBackground = $('.hero-background');
-            const $featureCards = $('.feature-card');
-            const $moleculeForm = $('#molecule-form');
-            const $predictButton = $('#predict-button');
-            const $spinnerOverlay = $('#spinner-overlay');
-            const $atcSelectionInput = $('#atc-selection');
-            const $selectedAtcCode = $('#selected-atc-code');
-            const $drugbankSize = $('#drugbank-size');
-            const $drugbankPlotInner = $('#drugbank-plot-inner');
-
-            // --- CORE FUNCTIONALITY ---
-
-            // Heartbeat for session keep-alive
-            function sendHeartbeat() {
-                fetch('/heartbeat', { method: 'POST' })
-                    .catch(error => console.error('Heartbeat failed:', error));
-            }
-            const heartbeatFrequency = parseInt("{{ heartbeat_frequency | default(30) }}") * 1000;
-            if (heartbeatFrequency > 0) {
-                setInterval(sendHeartbeat, heartbeatFrequency);
-            } else {
-                console.warn('Invalid heartbeat frequency, heartbeat disabled');
-            }
-
-            // Bootstrap 5 Tooltip Initialization
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-
-            // --- UI/UX ENHANCEMENTS ---
-
-            $(window).on('scroll', function() {
-                // Navbar scroll effect
-                $navbar.toggleClass('scrolled', $(this).scrollTop() > 50);
-                
-                // Parallax effect for hero section
-                const scrolled = $(this).scrollTop();
-                $heroBackground.css('transform', 'translateY(' + (scrolled * 0.4) + 'px)');
-            });
-
-            // Staggered animation for feature cards
-            $featureCards.each(function(i) {
-                $(this).css('animation-delay', (i * 0.15) + 's');
-            });
-
-            // Debounced plot resizing
-            let resizeTimeout;
-            $(window).on('resize', function() {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(function() {
-                    const plot = document.querySelector('#drugbank-plot-inner .js-plotly-plot');
-                    if (window.Plotly && plot) {
-                        Plotly.Plots.resize(plot);
-                    }
-                }, 250);
-            });
-
-            // --- EVENT HANDLERS ---
-            
-            // Loading animation on form submission
-            $moleculeForm.on('submit', function() {
-                $predictButton.addClass('loading');
-                $spinnerOverlay.fadeIn(300);
-            });
-
-            // Input type switching logic
-            $('input[name="input-type"]').on('change', function() {
-                const selectedType = $(this).val();
-                // Hide all forms first
-                $('#text-input-form, #file-input-form, #draw-input-form').hide();
-                
-                const formVisibility = {
-                    'text': '#text-input-form',
-                    'file': '#file-input-form',
-                    'draw': '#draw-input-form',
-                    'example': '#text-input-form'
-                };
-
-                if (formVisibility[selectedType]) {
-                    $(formVisibility[selectedType]).show();
-                }
-                
-                if (selectedType === 'example') {
-                    const exampleSmiles = "c1ccccc1\nCC(=O)Oc1ccccc1C(=O)O\nCN1C=NC2=C1C(=O)N(C)C(=O)N2C";
-                    $('#text-smiles-input').val(exampleSmiles);
-                }
-            });
-
-            // Event Delegation for all collapse buttons
-            $(document).on('click', '.collapse-button', function() {
-                $(this).find('.arrow').toggleClass('arrow-up');
-            });
-
-            // ATC code search (real-time filtering)
-            $atcSelectionInput.on('input', function() {
-                const searchText = $(this).val().toLowerCase();
-                $('.atc-item').each(function() {
-                    const itemText = $(this).text().toLowerCase();
-                    $(this).toggle(itemText.includes(searchText));
-                });
-            });
-
-            // ATC code selection
-            $('.atc-item').on('click', function() {
-                const selectedCode = $(this).text().trim();
-                $selectedAtcCode.text(`"${selectedCode}"`);
-                $(this).closest('.dropdown-menu').prev('.dropdown-toggle').dropdown('toggle');
-
-                fetch(`/get_drugbank_size?atc_code=${encodeURIComponent(selectedCode)}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok.');
-                        return response.json();
-                    })
-                    .then(data => {
-                        $drugbankSize.text(`${data.size.toLocaleString()} molecules`);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching DrugBank size:', error);
-                        $drugbankSize.text('Error loading size');
-                    });
-            });
-            
-            // Function to update the interactive plot
-            function updatePlot() {
-                const xProperty = $('#drugbank-x-axis-selection').val();
-                const yProperty = $('#drugbank-y-axis-selection').val();
-
-                if (!xProperty || !yProperty) return;
-
-                $drugbankPlotInner.html('<div class="d-flex justify-content-center align-items-center" style="height: 300px;"><div class="spinner"></div></div>'); // Show a spinner
-
-                fetch(`/update_drugbank_plot?x_axis=${encodeURIComponent(xProperty)}&y_axis=${encodeURIComponent(yProperty)}`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok.');
-                        return response.json();
-                    })
-                    .then(data => {
-                        $drugbankPlotInner.html(data.plot_html);
-                        // Plotly takes a moment to render, so we re-run resize after a short delay
-                        setTimeout(() => $(window).trigger('resize'), 100);
-                    })
-                    .catch(error => {
-                        console.error('Error updating plot:', error);
-                        $drugbankPlotInner.html('<div class="alert alert-danger">Could not load plot. Please try again.</div>');
-                    });
-            }
-
-            // DrugBank plot axis search and selection
-            $('.drugbank-x-axis-item, .drugbank-y-axis-item').on('click', function() {
-                const selectedProperty = $(this).text().trim();
-                const axis = $(this).hasClass('drugbank-x-axis-item') ? 'x' : 'y';
-                $(`#drugbank-${axis}-axis-selection`).val(selectedProperty);
-                $(this).closest('.dropdown-menu').prev('.dropdown-toggle').dropdown('toggle');
-                updatePlot();
-            });
-
-            // Filter logic for plot axis dropdowns
-            $('#drugbank-x-axis-selection, #drugbank-y-axis-selection').on('input', function() {
-                const searchText = $(this).val().toLowerCase();
-                const axis = $(this).attr('id').includes('x-axis') ? 'x' : 'y';
-                $(`.drugbank-${axis}-axis-item`).each(function() {
-                    const itemText = $(this).text().toLowerCase();
-                    $(this).toggle(itemText.includes(searchText));
-                });
-            });
-        });
+        window.CHEMXPLORE = {heartbeatSeconds: {{ heartbeat_frequency | int }}};
     </script>
+    <script src="{{ url_for('static', filename='scripts/predict.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/overview.js') }}"></script>
 </body>
 </html>

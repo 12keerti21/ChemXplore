@@ -17,11 +17,10 @@ setup(
     version=__version__,
     author="Kyle Swanson",
     author_email="swansonk.14@gmail.com",
-    description="admet_ai",
+    description="ChemXplore: ADMET prediction and medicinal chemistry analysis built on ADMET-AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/swansonk14/admet_ai",
-    download_url=f"https://github.com/swansonk14/admet_ai/archive/refs/tags/v_{__version__}.tar.gz",
+    url="https://github.com/12keerti21/ChemXplore",
     license="MIT",
     packages=find_packages(),
     package_data={"admet_ai": ["py.typed", "resources/**/*"]},
@@ -34,6 +33,7 @@ setup(
     install_requires=[
         "chemfunc>=1.0.4",
         "chemprop==1.6.1",
+        "torch<2.6",  # chemprop 1.6.1 checkpoints fail to load with torch>=2.6 (weights_only default)
         "numpy",
         "pandas>=2.0.0,<2.2.0",  # remove this limit once rdkit implements a fix to PandasTools
         "rdkit>=2023.3.3",
@@ -43,7 +43,8 @@ setup(
     ],
     extras_require={
         "tdc": ["openpyxl", "PyTDC>=0.4.1"],
-        "web": ["flask", "gunicorn"],
+        "web": ["flask", "gunicorn", "pdfkit"],
+        "dev": ["pytest"],
     },
     python_requires=">=3.10",
     classifiers=[

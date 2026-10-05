@@ -1,94 +1,126 @@
-# ADMET-AI
+# ChemXplore
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/admet_ai)](https://badge.fury.io/py/admet_ai)
-[![PyPI version](https://badge.fury.io/py/admet_ai.svg)](https://badge.fury.io/py/admet_ai)
-[![Downloads](https://pepy.tech/badge/admet_ai)](https://pepy.tech/project/admet_ai)
-[![license](https://img.shields.io/github/license/swansonk14/admet_ai.svg)](https://github.com/swansonk14/admet_ai/blob/main/LICENSE.txt)
+[![Tests](https://github.com/12keerti21/ChemXplore/actions/workflows/tests.yml/badge.svg)](https://github.com/12keerti21/ChemXplore/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-This git repo contains the code for ADMET-AI, an ADMET prediction platform that
-uses [Chemprop-RDKit]((https://github.com/chemprop/chemprop)) models trained on ADMET datasets from the Therapeutics
-Data Commons ([TDC](https://tdcommons.ai/)). ADMET-AI can be used to make ADMET predictions on new molecules via the
-command line, via the Python API, or via a web server. A live web server hosting ADMET-AI is
-at [admet.ai.greenstonebio.com](https://admet.ai.greenstonebio.com)
+ChemXplore predicts the ADMET properties (absorption, distribution, metabolism, excretion and toxicity) of small
+molecules and adds the medicinal chemistry checks needed to triage them. It is built on
+[ADMET-AI](https://github.com/swansonk14/admet_ai), which uses [Chemprop-RDKit](https://github.com/chemprop/chemprop)
+models trained on 41 ADMET datasets from the [Therapeutics Data Commons](https://tdcommons.ai/).
 
-Please see the following paper and [this blog post](https://portal.valencelabs.com/blogs/post/admet-ai-a-machine-learning-admet-platform-for-evaluation-of-large-scale-QPEa0j5OTYYHTaA) for more
-details, and please cite us if ADMET-AI is useful in your work. Instructions to reproduce the results in our paper are in [docs/reproduce.md](docs/reproduce.md).
+It runs as a web app, a command line tool, a Python module or a JSON API.
 
-[ADMET-AI: A machine learning ADMET platform for evaluation of large-scale chemical libraries](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030?utm_source=authortollfreelink&utm_campaign=bioinformatics&utm_medium=email&guestAccessKey=f4fca1d2-49ec-4b10-b476-5aea3bf37045)
+![The ChemXplore results overview](docs/images/overview.png)
 
+## Features
 
-## Table of Contents
+- **41 ADMET predictions and 8 physicochemical properties**, each with its percentile against approved DrugBank drugs.
+  The reference set can be narrowed to an ATC class such as `analgesics`.
+- **Drug-likeness rules:** Lipinski, Ghose, Veber, Egan and Muegge, listing the criteria each molecule breaks.
+- **Structural alerts:** PAINS and Brenk substructures, with the matching atoms highlighted on the structure.
+- **Synthetic accessibility score** (Ertl & Schuffenhauer), 1 (easy) to 10 (hard).
+- **BOILED-Egg** prediction and plot of gut absorption and brain penetration (Daina & Zoete, 2016).
+- **Closest approved drugs** by Morgan fingerprint similarity, linked to DrugBank.
+- **Risk summary:** a red/amber/green rating per molecule across cardiotoxicity, mutagenicity, liver injury, clinical
+  toxicity, CYP inhibition, absorption, solubility, drug-likeness and structural alerts.
+- **Web app:** SMILES, CSV, drawn structure or compound name (via PubChem) as input; a sortable, filterable overview
+  table; side-by-side comparison of up to 4 molecules; CSV download and a printable PDF report.
 
+> The risk thresholds are screening heuristics for prioritising molecules, not clinical judgements.
+> Predictions are for research use only.
+
+## A look around
+
+**Every molecule gets a full breakdown** — risk summary, drug-likeness rules, structural alerts and the approved drugs
+it most resembles:
+
+![A molecule breakdown in the report](docs/images/molecule-report.png)
+
+**Structural alerts highlight the offending atoms**, so you can see exactly which part of the molecule triggered them:
+
+![Structural alerts with highlighted atoms](docs/images/structural-alerts.png)
+
+**The BOILED-Egg plot** shows at a glance which molecules should be absorbed from the gut (white) and which should
+reach the brain (yolk):
+
+![BOILED-Egg plot](docs/images/boiled-egg.png)
+
+**Compare up to 4 molecules side by side**, down to every individual property:
+
+![Side-by-side comparison](docs/images/compare.png)
+
+## Table of contents
+
+- [Features](#features)
+- [A look around](#a-look-around)
 - [Installation](#installation)
-- [Predicting ADMET properties](#predicting-admet-properties)
-    * [Command line tool](#command-line-tool)
-    * [Python module](#python-module)
-    * [Web server](#web-server)
+- [Web app](#web-app)
+- [Command line](#command-line)
+- [Python module](#python-module)
+- [JSON API](#json-api)
+- [Docker](#docker)
+- [Development](#development)
+- [Citation](#citation)
 
 ## Installation
 
-ADMET-AI can be installed in a few minutes on any operating system using pip (optionally within a conda environment). If
-a GPU is available, it will be used by default, but the code can also run on CPUs only.
-
-Optionally, create a conda environment.
+ChemXplore needs Python 3.10 or newer.
 
 ```bash
-conda create -y -n admet_ai python=3.10
-conda activate admet_ai
+git clone https://github.com/12keerti21/ChemXplore.git
+cd ChemXplore
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[web]"
 ```
 
-Install ADMET-AI via pip.
+chemprop 1.6.1 cannot load its model files with PyTorch 2.6 or newer, so `torch<2.6` is pinned. On a machine without a
+GPU, installing the smaller CPU build of PyTorch first keeps the download down:
 
 ```bash
-pip install admet-ai
+pip install "torch==2.5.1" --index-url https://download.pytorch.org/whl/cpu
 ```
 
-Alternatively, clone the repo and install ADMET-AI locally.
+If you hit `ImportError: libXrender.so.1`, run `conda install -c conda-forge xorg-libxrender`.
+
+## Web app
 
 ```bash
-git clone https://github.com/swansonk14/admet_ai.git
-cd admet_ai
-pip install -e .
+admet_web --port 5000
 ```
 
-By default, the pip installation only includes dependencies required for making ADMET predictions, either via the
-command line or via the Python API. To install dependencies required for processing TDC data or plotting TDC results,
-run `pip install admet-ai[tdc]`. To install dependencies required for hosting the ADMET-AI web server,
-run `pip install admet-ai[web]`.
+Then open http://127.0.0.1:5000.
 
-If there are version issues with the required packages, create a conda environment with specific working versions of the
-packages as follows.
+Paste SMILES, upload a CSV, draw a structure or type compound names:
 
-```bash
-pip install -r requirements.txt
-pip install -e .
-```
+![The molecule input panel](docs/images/input.png)
 
-Note: If you get the issue `ImportError: libXrender.so.1: cannot open shared object file: No such file or directory`,
-run `conda install -c conda-forge xorg-libxrender`.
+Set the `CHEMXPLORE_SECRET_KEY` environment variable to keep sessions working across restarts; without it a random key
+is generated at startup and everyone is logged out when the server restarts.
 
-## Predicting ADMET properties
+Predictions are held in memory per process and dropped after five minutes of inactivity, so run a single worker with
+several threads rather than multiple workers.
 
-ADMET-AI can be used to make ADMET predictions in three ways: (1) as a command line tool, (2) as a Python module, or (3)
-as a web server.
+### PDF reports
 
-### Command line tool
+The **PDF** button produces a PDF directly when [wkhtmltopdf](https://wkhtmltopdf.org/) is installed (the Docker image
+includes it). Without it, the button opens the printable report instead, which you can save as a PDF from the browser's
+print dialog.
 
-ADMET predictions can be made on the command line with the `admet_predict` command, as illustrated below.
+## Command line
 
 ```bash
 admet_predict \
     --data_path data.csv \
     --save_path preds.csv \
-    --smiles_column smiles
+    --smiles_column smiles \
+    --include_medchem
 ```
 
-This command assumes that there exists a file called `data.csv` with SMILES strings in the column `smiles`. The
-predictions will be saved to a file called `preds.csv`.
+This reads SMILES from the `smiles` column of `data.csv` and writes predictions to `preds.csv`. Adding
+`--include_medchem` appends the drug-likeness, structural alert, synthetic accessibility and BOILED-Egg columns.
 
-### Python module
-
-ADMET predictions can be made using the `predict` function in the `admet_ai` Python module, as illustrated below.
+## Python module
 
 ```python
 from admet_ai import ADMETModel
@@ -97,23 +129,72 @@ model = ADMETModel()
 preds = model.predict(smiles="O(c1ccc(cc1)CCOC)CC(O)CNC(C)C")
 ```
 
-If a SMILES string is provided, then `preds` is a dictionary mapping property names to values. If a list of SMILES
-strings is provided, then `preds` is a Pandas DataFrame where the index is the SMILES and the columns are the
-properties.
+Passing a single SMILES returns a dictionary of property names to values; passing a list returns a DataFrame indexed by
+SMILES. The medicinal chemistry checks are separate:
 
-### Web server
+```python
+from rdkit import Chem
+from admet_ai.medchem import analyze_molecule
+from admet_ai.similarity import find_similar_drugs
 
-ADMET predictions can be made using the ADMET-AI web server, as illustrated below. Note: Running the following command
-requires additional web dependencies (i.e., `pip install admet-ai[web]`).
-
-```bash
-admet_web
+mol = Chem.MolFromSmiles("CC(C)Cc1ccc(cc1)C(C)C(=O)O")
+analysis = analyze_molecule(mol)       # rules, alerts, sa_score, boiled_egg
+drugs = find_similar_drugs(mol, top_k=5)
 ```
 
-Then navigate to http://127.0.0.1:5000 to view the website.
+## JSON API
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/predict \
+    -H 'Content-Type: application/json' \
+    -d '{"smiles": ["CC(C)Cc1ccc(cc1)C(C)C(=O)O"], "similar_drugs": 3}'
+```
+
+The body takes `smiles` (a list, required), `atc_code` (an ATC class name or `all`) and `similar_drugs` (0 to 20). The
+response holds one entry per valid molecule with its `predictions`, `drugbank_percentiles`, `medchem`, `risk` and
+`similar_drugs`, plus any `invalid_smiles`. `GET /api/health` reports the running version.
+
+## Docker
+
+```bash
+docker build -t chemxplore .
+docker run -p 5000:5000 -e CHEMXPLORE_SECRET_KEY=change-me chemxplore
+```
+
+The image includes `wkhtmltopdf`, so PDF reports work without extra setup.
+
+## Development
+
+```bash
+pip install -e ".[web,dev]"
+pytest
+```
+
+The tests load the real models and cover the chemistry modules, the risk rules and every web route.
 
 ### Analysis plots
 
-The DrugBank reference plot and radial plots displayed on the ADMET-AI website can be generated locally using the
-`scripts/plot_drugbank_reference.py` and `scripts/plot_radial_summaries.py` scripts, respectively. Both scripts
-take as input a CSV file with ADMET-AI predictions along with other parameters.
+The DrugBank reference and radial plots can also be generated locally with `scripts/plot_drugbank_reference.py` and
+`scripts/plot_radial_summaries.py`. Both take a CSV of predictions as input.
+
+## Citation
+
+ChemXplore builds on ADMET-AI. Please cite the original paper if this is useful in your work, and see
+[docs/reproduce.md](docs/reproduce.md) to reproduce its results.
+
+[ADMET-AI: A machine learning ADMET platform for evaluation of large-scale chemical libraries](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btae416/7698030)
+
+Other methods used here:
+
+- Daina, A. & Zoete, V. *A BOILED-Egg to predict gastrointestinal absorption and brain penetration of small molecules.*
+  ChemMedChem 11, 1117–1121 (2016).
+- Ertl, P. & Schuffenhauer, A. *Estimation of synthetic accessibility score of drug-like molecules.* J. Cheminform. 1, 8
+  (2009).
+- Baell, J. B. & Holloway, G. A. *New substructure filters for removal of pan assay interference compounds (PAINS).*
+  J. Med. Chem. 53, 2719–2740 (2010).
+- Brenk, R. et al. *Lessons learnt from assembling screening libraries for drug discovery for neglected diseases.*
+  ChemMedChem 3, 435–444 (2008).
+
+## License
+
+MIT, as for the upstream ADMET-AI project. See [LICENSE](LICENSE).

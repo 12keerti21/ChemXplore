@@ -1,0 +1,94 @@
+{% extends "page_layout.html" %}
+{% import 'results_macros.html' as results %}
+
+{% block title %}ChemXplore Report{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <h1><span class="brand">ChemXplore</span> ADMET Report</h1>
+        <div class="cx-muted">Generated {{ timestamp }}</div>
+    </div>
+    <div class="toolbar no-print">
+        <button class="button" type="button" onclick="window.print()">Print / Save as PDF</button>
+        <a class="button secondary" href="{{ url_for('download_predictions') }}">Download CSV</a>
+    </div>
+</header>
+
+<section class="card">
+    <h2>Summary</h2>
+    <div class="meta">
+        <div><strong>Molecules analyzed</strong>{{ "{:,}".format(num_molecules) }}</div>
+        <div><strong>In this report</strong>{{ molecules | length }}</div>
+        <div><strong>DrugBank reference</strong>{{ "{:,}".format(drugbank_size) }} approved drugs</div>
+        <div><strong>ATC filter</strong>{{ atc_code }}</div>
+    </div>
+    {% if num_molecules > molecules | length %}
+    <p class="cx-muted">This report covers the first {{ molecules | length }} molecules. The CSV contains all {{ "{:,}".format(num_molecules) }}.</p>
+    {% endif %}
+
+    <h3>Risk overview</h3>
+    <table class="cx-table">
+        <thead><tr><th>#</th><th>SMILES</th><th>Risk score</th><th>Flags</th></tr></thead>
+        <tbody>
+        {% for molecule in molecules %}
+        <tr>
+            <td>{{ molecule.number }}</td>
+            <td class="cx-mono" style="word-break: break-all;">{{ molecule.smiles }}</td>
+            <td class="cx-mono">{{ molecule.risk_score }}</td>
+            <td>{{ results.risk_badges(molecule.risk_flags) }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h2>DrugBank comparison</h2>
+    <div class="cx-plot">{{ drugbank_plot | safe }}</div>
+</section>
+
+<section class="card">
+    <h2>BOILED-Egg</h2>
+    <p class="cx-muted">White: predicted gut absorption. Yolk: predicted brain penetration.</p>
+    <div class="cx-plot">{{ boiled_egg_plot | safe }}</div>
+</section>
+
+{% for molecule in molecules %}
+<section class="card molecule">
+    <h2>Molecule {{ molecule.number }}</h2>
+    <p class="smiles">{{ molecule.smiles }}</p>
+    <div class="images">
+        <div>{{ molecule.mol_svg | safe }}</div>
+        <div>{{ molecule.radial_svg | safe }}</div>
+    </div>
+
+    <h3>Risk summary</h3>
+    {{ results.risk_table(molecule.risk_flags) }}
+
+    <h3>Drug-likeness</h3>
+    {{ results.rules_table(molecule.medchem, rule_names) }}
+
+    <h3>Structural alerts</h3>
+    {{ results.alerts_list(molecule.medchem) }}
+
+    <h3>Most similar approved drugs</h3>
+    {{ results.similar_drugs_table(molecule.similar_drugs) }}
+
+    {% for category in admet_categories %}
+    <h3>{{ category }}</h3>
+    {{ results.property_table(molecule, admet_info, category, percentile_suffix, string_to_html_sup) }}
+    {% endfor %}
+</section>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+{% if auto_print %}
+<script>
+    window.addEventListener("load", function () {
+        window.print();
+    });
+</script>
+{% endif %}
+{% endblock %}

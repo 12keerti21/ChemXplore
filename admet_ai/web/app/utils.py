@@ -9,6 +9,7 @@ from flask import request
 from rdkit import Chem
 from werkzeug.utils import secure_filename
 
+from admet_ai.pubchem import names_to_smiles
 from admet_ai.web.app import app
 
 
@@ -16,39 +17,57 @@ SVG_WIDTH_PATTERN = re.compile(r"width=['\"]\d+(\.\d+)?[a-z]+['\"]")
 SVG_HEIGHT_PATTERN = re.compile(r"height=['\"]\d+(\.\d+)?[a-z]+['\"]")
 
 
-def get_smiles_from_request() -> tuple[list[str] | None, str | None]:
-    """Gets SMILES from a request.
+def split_lines(text: str) -> list[str]:
+    """Splits text into stripped, non-empty lines."""
+    return [line.strip() for line in text.splitlines() if line.strip()]
 
-    :return: A tuple with a list of SMILES or None and an error message or None.
+
+def get_smiles_from_request() -> tuple[list[str] | None, list[str], str | None]:
+    """Gets SMILES from the form, using the input type the user picked.
+
+    :return: A tuple of the SMILES (or None), warnings, and an error message (or None).
     """
-    # Get SMILES from request
-    if request.form["text-smiles"] != "":
-        smiles = request.form["text-smiles"].split("\n")
-    elif request.form["draw-smiles"] != "":
-        smiles = [request.form["draw-smiles"]]
-    else:
-        # Upload data file with SMILES
-        data = request.files["data"]
-        data_name = secure_filename(data.filename)
-        smiles_column = request.form["smiles-column"]
+    input_type = request.form.get("input-type", "text")
+    warnings = []
+
+    if input_type == "draw":
+        smiles = split_lines(request.form.get("draw-smiles", ""))
+    elif input_type == "name":
+        names = split_lines(request.form.get("text-names", ""))
+        if not names:
+            return None, warnings, "Enter at least one compound name."
+        if len(names) > app.config["MAX_NAME_LOOKUPS"]:
+            return None, warnings, f"Name lookup is limited to {app.config['MAX_NAME_LOOKUPS']} names at a time."
+        try:
+            smiles, not_found = names_to_smiles(names)
+        except ConnectionError as error:
+            return None, warnings, f"Name lookup failed: {error}. Try again or enter SMILES instead."
+        warnings.extend(f"No PubChem match for name: {name}" for name in not_found)
+    elif input_type == "file":
+        data = request.files.get("data")
+        if data is None or data.filename == "":
+            return None, warnings, "Choose a CSV file to upload."
+        smiles_column = request.form.get("smiles-column", "smiles")
 
         with TemporaryDirectory() as temp_dir:
-            data_path = str(Path(temp_dir) / data_name)
+            data_path = str(Path(temp_dir) / secure_filename(data.filename))
             data.save(data_path)
-            df = pd.read_csv(data_path)
+            try:
+                df = pd.read_csv(data_path)
+            except (pd.errors.ParserError, pd.errors.EmptyDataError, UnicodeDecodeError):
+                return None, warnings, "Could not read the uploaded file as CSV."
 
-            if smiles_column in df:
-                smiles = df[smiles_column].astype(str).tolist()
-            else:
-                return None, f"SMILES column '{smiles_column}' not found in data file."
+        if smiles_column not in df:
+            return None, warnings, f"SMILES column '{smiles_column}' not found in data file."
+        smiles = [str(smile).strip() for smile in df[smiles_column].dropna()]
+    else:
+        smiles = split_lines(request.form.get("text-smiles", ""))
 
-    # Strip SMILES of whitespace
-    smiles = [smile.strip() for smile in smiles]
-
-    # Skip empty lines
     smiles = [smile for smile in smiles if smile != ""]
+    if not smiles:
+        return None, warnings, "No molecules given."
 
-    return smiles, None
+    return smiles, warnings, None
 
 
 def smiles_to_mols(smiles: list[str]) -> list[Chem.Mol]:

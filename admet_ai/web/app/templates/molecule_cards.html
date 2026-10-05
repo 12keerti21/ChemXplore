@@ -1,0 +1,75 @@
+{% import 'results_macros.html' as results %}
+{% from 'macros.html' import radial_description_tooltip %}
+<h3 class="text-white my-5 text-center">
+    <i class="fas fa-microscope me-2" style="color: var(--accent-color);"></i>Molecule Details
+</h3>
+
+<ul class="list-unstyled">
+    {% for molecule in molecules %}
+    <li class="molecule-prediction" id="molecule-{{ molecule.number }}">
+        <div class="molecule-card">
+            <button class="collapse-button text-decoration-none w-100" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse-info-{{ molecule.number }}" aria-expanded="false"
+                    aria-controls="collapse-info-{{ molecule.number }}"
+                    style="background: transparent; border: none; padding: 0;">
+                <div class="arrow" style="position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);"></div>
+                <div class="smiles-and-svg-container" style="padding-left: 4rem;">
+                    <div class="smiles-container">
+                        <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                            <i class="fas fa-flask me-2" style="color: var(--primary-color);"></i>Molecule {{ molecule.number }}
+                        </div>
+                        <div class="text-break" style="font-weight: 600; margin-bottom: 0.75rem;">{{ molecule.smiles }}</div>
+                        {{ results.risk_badges(molecule.risk_flags) }}
+                    </div>
+                    <div class="molecule-svg-container">
+                        <div class="radial-plot" data-bs-toggle="tooltip" data-bs-html="true" title="{{ radial_description_tooltip() }}">
+                            {{ molecule.radial_svg | safe }}
+                        </div>
+                        <div class="mol-image" style="background: white; border-radius: 12px; padding: 0.5rem;">
+                            {{ molecule.mol_svg | safe }}
+                        </div>
+                    </div>
+                </div>
+            </button>
+
+            <div id="collapse-info-{{ molecule.number }}" class="collapse">
+                <div class="prediction-container p-4" style="background: rgba(0,0,0,0.2);">
+                    <div class="cx-panel-grid molecule-section">
+                        <div class="cx-panel">
+                            <h4><i class="fas fa-traffic-light me-2"></i>Risk Summary</h4>
+                            {{ results.risk_table(molecule.risk_flags) }}
+                            <p class="cx-muted mt-2" style="font-size: 0.8rem;">Screening heuristics from the predictions, not clinical judgements.</p>
+                        </div>
+                        <div class="cx-panel">
+                            <h4><i class="fas fa-pills me-2"></i>Drug-likeness</h4>
+                            {{ results.rules_table(molecule.medchem, rule_names) }}
+                        </div>
+                    </div>
+
+                    <div class="molecule-section">
+                        <h4><i class="fas fa-exclamation-triangle me-2"></i>Structural Alerts</h4>
+                        {{ results.alerts_list(molecule.medchem) }}
+                    </div>
+
+                    <div class="molecule-section">
+                        <h4><i class="fas fa-project-diagram me-2"></i>Most Similar Approved Drugs</h4>
+                        {{ results.similar_drugs_table(molecule.similar_drugs) }}
+                    </div>
+
+                    {% for category in admet_categories %}
+                    <div class="molecule-section">
+                        <h4>
+                            <img src="{{ url_for('static', filename='images/' + category.lower() + '.jpg') }}" alt="" class="me-2" style="width: 32px; height: 32px; border-radius: 6px;">
+                            {{ category }}
+                        </h4>
+                        <div class="table-responsive">
+                            {{ results.property_table(molecule, admet_info, category, drugbank_approved_percentile_suffix, string_to_html_sup, low_performance_threshold) }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>

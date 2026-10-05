@@ -1,0 +1,108 @@
+{% import 'results_macros.html' as results %}
+<div class="fade-in" id="results">
+    <h2 class="section-title"><i class="fas fa-chart-bar me-2"></i>ADMET Analysis Results</h2>
+
+    <div class="modern-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex gap-3 flex-wrap">
+                <div class="stat-tile">
+                    <div class="stat-label">Input Molecules</div>
+                    <div class="stat-value" style="color: var(--primary-color);">{{ "{:,}".format(num_molecules) }}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Reference Dataset</div>
+                    <div class="stat-value" style="color: var(--secondary-color);">{{ "{:,}".format(drugbank_size) }}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">ATC Code</div>
+                    <div class="stat-value" style="color: var(--accent-color); font-size: 1.2rem;">{{ atc_code }}</div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('download_predictions') }}" class="btn btn-primary" style="background: var(--success-color); border: none;">
+                    <i class="fas fa-download me-2"></i>CSV
+                </a>
+                <a href="{{ url_for('download_pdf') }}" class="btn btn-primary" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf me-2"></i>PDF
+                </a>
+                <a href="{{ url_for('show_results') }}" class="btn btn-outline-light" target="_blank" rel="noopener">
+                    <i class="fas fa-file-alt me-2"></i>Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# Overview table, filled in by overview.js from the JSON below #}
+    <div class="modern-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-2">
+            <h3 class="m-0" style="color: var(--primary-color); font-size: 1.4rem;"><i class="fas fa-table me-2"></i>Overview</h3>
+            <div class="d-flex gap-3 align-items-center flex-wrap">
+                <input id="overview-filter" class="form-control" type="text" placeholder="Filter by SMILES or drug" style="width: 220px;">
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" id="overview-hide-risky">
+                    <label class="form-check-label" for="overview-hide-risky">Hide high-risk</label>
+                </div>
+                <button id="compare-button" type="button" class="btn btn-primary" disabled
+                        data-compare-url="{{ url_for('compare') }}" data-max-compare="{{ max_compare }}">
+                    <i class="fas fa-columns me-2"></i>Compare <span id="compare-count">0</span>
+                </button>
+            </div>
+        </div>
+        <p class="cx-muted mb-3">Click a header to sort. Tick 2 to {{ max_compare }} rows to compare them side by side.</p>
+        <div class="table-responsive">
+            <table class="cx-table" id="overview-table">
+                <thead><tr></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        {% if num_molecules > num_display_molecules %}
+        <p class="cx-muted mt-3 mb-0">Showing the first {{ num_display_molecules }} of {{ "{:,}".format(num_molecules) }} molecules. The CSV has all of them.</p>
+        {% endif %}
+    </div>
+    <script type="application/json" id="overview-data">{{ overview_rows | tojson }}</script>
+
+    <div class="collapse-section">
+        <button id="drugbank-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                data-bs-target="#drugbank" aria-expanded="false" aria-controls="drugbank">
+            <div id="drugbank-arrow" class="arrow"></div>
+            <strong class="dropdown-title"><i class="fas fa-braille me-2"></i>DrugBank Comparison Plot</strong>
+        </button>
+        <div id="drugbank" class="collapse">
+            <div class="modern-card mt-3 p-4">
+                <div class="d-flex gap-3 justify-content-center mb-4 flex-wrap">
+                    {% for axis in ["x", "y"] %}
+                    <div>
+                        <label for="drugbank-{{ axis }}-select" class="form-label">{{ axis.upper() }}-axis property</label>
+                        <select id="drugbank-{{ axis }}-select" class="form-select drugbank-axis-select" data-axis="{{ axis }}" style="min-width: 280px;">
+                            <option value="">Keep current</option>
+                            {% for task in drugbank_tasks %}
+                            <option value="{{ task }}">{{ task }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="drugbank-plot-inner" class="cx-plot">{{ drugbank_plot | safe }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="collapse-section">
+        <button id="egg-collapse-button" class="modern-card collapse-button" type="button" data-bs-toggle="collapse"
+                data-bs-target="#boiled-egg" aria-expanded="false" aria-controls="boiled-egg">
+            <div id="egg-arrow" class="arrow"></div>
+            <strong class="dropdown-title"><i class="fas fa-egg me-2"></i>BOILED-Egg Plot</strong>
+        </button>
+        <div id="boiled-egg" class="collapse">
+            <div class="modern-card mt-3 p-4">
+                <p class="cx-muted">
+                    Molecules in the white are predicted to be absorbed from the gut. Molecules in the yolk are predicted to
+                    reach the brain (Daina &amp; Zoete, ChemMedChem 2016). Numbers match the overview table.
+                </p>
+                <div class="cx-plot">{{ boiled_egg_plot | safe }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'molecule_cards.html' %}
+</div>

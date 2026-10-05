@@ -1,0 +1,112 @@
+{# Result blocks shared by index.html, report.html and compare.html. Each page styles the cx-* classes. #}
+
+{% macro format_value(value) -%}
+{%- if value is boolean -%}{{ "Yes" if value else "No" }}
+{%- elif value is number -%}{{ ("{:.2f}" if value|abs > 0.005 or value == 0 else "{:.2e}").format(value) }}
+{%- else -%}{{ value }}{%- endif -%}
+{%- endmacro %}
+
+{% macro risk_badges(flags) %}
+<div class="cx-risk-badges">
+    {% for flag in flags %}
+    <span class="cx-badge cx-{{ flag.level }}" title="{{ flag.label }}: {{ flag.value }}">{{ flag.key }}</span>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro risk_table(flags) %}
+<table class="cx-table">
+    <thead><tr><th>Check</th><th>Value</th><th>Level</th></tr></thead>
+    <tbody>
+    {% for flag in flags %}
+    <tr>
+        <td>{{ flag.label }}</td>
+        <td class="cx-mono">{{ flag.value }}</td>
+        <td><span class="cx-badge cx-{{ flag.level }}">{{ {"low": "OK", "medium": "Caution", "high": "Risk"}[flag.level] }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}
+
+{% macro rules_table(medchem, rule_names) %}
+<table class="cx-table">
+    <thead><tr><th>Rule</th><th>Result</th><th>Violations</th></tr></thead>
+    <tbody>
+    {% for rule in rule_names %}
+    {% set violations = medchem.rules[rule] %}
+    <tr>
+        <td>{{ rule }}</td>
+        <td><span class="cx-badge cx-{{ 'low' if not violations else ('medium' if violations|length == 1 else 'high') }}">{{ "Pass" if not violations else "Fail" }}</span></td>
+        <td>{{ violations | join(", ") if violations else "None" }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td>Synthetic accessibility</td>
+        <td class="cx-mono">{{ "{:.2f}".format(medchem.sa_score) }}</td>
+        <td>1 (easy) to 10 (hard)</td>
+    </tr>
+    <tr>
+        <td>BOILED-Egg</td>
+        <td colspan="2">
+            GI absorption: <strong>{{ "High" if medchem.boiled_egg.gi_absorption else "Low" }}</strong>,
+            brain penetration: <strong>{{ "Yes" if medchem.boiled_egg.bbb_permeant else "No" }}</strong>
+            <span class="cx-muted">(TPSA {{ "{:.1f}".format(medchem.boiled_egg.tpsa) }}, WLOGP {{ "{:.2f}".format(medchem.boiled_egg.wlogp) }})</span>
+        </td>
+    </tr>
+    </tbody>
+</table>
+{% endmacro %}
+
+{% macro alerts_list(medchem) %}
+{% if medchem.alerts %}
+<div class="cx-alerts">
+    {% for alert in medchem.alerts %}
+    <figure class="cx-alert">
+        {% if alert.svg %}<div class="cx-alert-svg">{{ alert.svg | safe }}</div>{% endif %}
+        <figcaption><span class="cx-badge cx-{{ 'high' if alert.catalog == 'PAINS' else 'medium' }}">{{ alert.catalog }}</span> {{ alert.description }}</figcaption>
+    </figure>
+    {% endfor %}
+</div>
+{% else %}
+<p class="cx-muted">No PAINS or Brenk structural alerts.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro similar_drugs_table(drugs) %}
+<table class="cx-table">
+    <thead><tr><th>Approved drug</th><th>DrugBank ID</th><th>Similarity</th></tr></thead>
+    <tbody>
+    {% for drug in drugs %}
+    <tr>
+        <td><a href="{{ drug.url }}" target="_blank" rel="noopener">{{ drug.name }}</a></td>
+        <td class="cx-mono">{{ drug.id }}</td>
+        <td class="cx-mono">{{ "{:.2f}".format(drug.similarity) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}
+
+{% macro property_table(molecule, admet_info, category, percentile_suffix, string_to_html_sup, low_performance_threshold=0.6) %}
+<table class="cx-table">
+    <thead><tr><th>Property</th><th>{{ "Value" if category == "Physicochemical" else "Prediction" }}</th><th>DrugBank percentile</th><th>Units</th></tr></thead>
+    <tbody>
+    {% for _, row in admet_info[admet_info["category"] == category].iterrows() %}
+    <tr>
+        <td>
+            <a href="{{ row['url'] }}" target="_blank" rel="noopener">{{ row["name"] }}</a>
+            {% if category != "Physicochemical" %}
+            {% set metric = "AUROC" if row["task_type"] == "classification" else "R^2" %}
+            <span class="cx-muted" title="Trained on {{ '{:,.0f}'.format(row['size']) }} molecules. Test {{ metric }}: {{ '{:.2f}'.format(row[metric]) }}">&#9432;</span>
+            {% if row[metric] < low_performance_threshold %}<span class="cx-badge cx-medium" title="This model's test {{ metric }} is below {{ low_performance_threshold }}">Lower accuracy</span>{% endif %}
+            {% endif %}
+        </td>
+        <td class="cx-mono">{{ format_value(molecule.properties[row["id"]]) }}</td>
+        <td class="cx-mono">{{ "{:.1f}".format(molecule.properties[row["id"] + "_" + percentile_suffix]) }}%</td>
+        <td>{{ string_to_html_sup(row["units"]) | safe }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}

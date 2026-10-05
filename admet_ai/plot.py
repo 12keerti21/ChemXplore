@@ -1,11 +1,14 @@
 """Defines functions for ADMET-AI plots."""
 import re
+import threading
+from functools import wraps
 from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.patches import Ellipse
 from rdkit import Chem
 from rdkit.Chem.Draw.rdMolDraw2D import MolDraw2DSVG
 
@@ -13,6 +16,21 @@ from admet_ai.admet_info import (
     get_admet_id_to_units,
     get_admet_name_to_id,
 )
+from admet_ai.medchem import BOILED_EGG_WHITE, BOILED_EGG_YOLK, boiled_egg_coordinates
+
+# pyplot keeps global state, so plots from concurrent web requests must not interleave
+PLOT_LOCK = threading.Lock()
+
+
+def locked_plot(func: callable) -> callable:
+    """Decorator that serializes calls to a pyplot-based function."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with PLOT_LOCK:
+            return func(*args, **kwargs)
+
+    return wrapper
 
 
 def string_to_latex_sup(string: str) -> str:
@@ -24,6 +42,7 @@ def string_to_latex_sup(string: str) -> str:
     return re.sub(r"\^(\d+)", r"$^{\1}$", string)
 
 
+@locked_plot
 def plot_drugbank_reference(
     preds_df: pd.DataFrame,
     drugbank_df: pd.DataFrame,
@@ -123,6 +142,7 @@ def plot_drugbank_reference(
     return plot
 
 
+@locked_plot
 def plot_radial_summary(
     property_id_to_percentile: dict[str, float],
     percentile_suffix: str = "",
@@ -225,20 +245,79 @@ def plot_radial_summary(
     return plot
 
 
-def plot_molecule_svg(mol: str | Chem.Mol) -> str:
+def plot_molecule_svg(mol: str | Chem.Mol, highlight_atoms: list[int] | None = None) -> str:
     """Plots a molecule as an SVG image.
 
     :param mol: A SMILES string or RDKit molecule.
+    :param highlight_atoms: Atom indices to highlight, such as the atoms of a structural alert.
     :return: An SVG image of the molecule.
     """
     # Convert SMILES to Mol if needed
     if isinstance(mol, str):
         mol = Chem.MolFromSmiles(mol)
 
+    # Highlight bonds between highlighted atoms too
+    highlight_bonds = None
+    if highlight_atoms:
+        atom_set = set(highlight_atoms)
+        highlight_bonds = [
+            bond.GetIdx()
+            for bond in mol.GetBonds()
+            if bond.GetBeginAtomIdx() in atom_set and bond.GetEndAtomIdx() in atom_set
+        ]
+
     # Convert Mol to SVG
     d = MolDraw2DSVG(200, 200)
-    d.DrawMolecule(mol)
+    d.DrawMolecule(mol, highlightAtoms=highlight_atoms or [], highlightBonds=highlight_bonds or [])
     d.FinishDrawing()
     smiles_svg = d.GetDrawingText()
 
     return smiles_svg
+
+
+@locked_plot
+def plot_boiled_egg(mols: list[Chem.Mol], image_type: str = "svg") -> bytes:
+    """Plots molecules on the BOILED-Egg (TPSA vs. WLOGP) with numbered points.
+
+    :param mols: RDKit molecules, numbered from 1 in the plot.
+    :param image_type: The image type for the plot (e.g., svg).
+    :return: Bytes containing the plot.
+    """
+    fig, ax = plt.subplots(figsize=(7, 5.5))
+    ax.set_facecolor("#9e9e9e")
+
+    for ellipse, color, label in [
+        (BOILED_EGG_WHITE, "#ffffff", "GI absorption (white)"),
+        (BOILED_EGG_YOLK, "#f5c242", "Brain penetration (yolk)"),
+    ]:
+        ax.add_patch(
+            Ellipse(
+                xy=ellipse["center"],
+                width=ellipse["width"],
+                height=ellipse["height"],
+                angle=ellipse["angle"],
+                facecolor=color,
+                edgecolor="#555555",
+                label=label,
+            )
+        )
+
+    coordinates = [boiled_egg_coordinates(mol) for mol in mols]
+    if coordinates:
+        tpsas, wlogps = zip(*coordinates)
+        ax.scatter(tpsas, wlogps, c="#c0392b", edgecolors="white", s=60, zorder=3, label="Input molecules")
+        for number, (tpsa, wlogp) in enumerate(coordinates, start=1):
+            ax.annotate(str(number), (tpsa, wlogp), xytext=(4, 4), textcoords="offset points", fontsize=8, zorder=4)
+
+    ax.set_xlim(-10, max([200] + [tpsa + 10 for tpsa, _ in coordinates]))
+    ax.set_ylim(min([-4] + [wlogp - 1 for _, wlogp in coordinates]), max([8] + [wlogp + 1 for _, wlogp in coordinates]))
+    ax.set_xlabel("TPSA (Å$^2$)")
+    ax.set_ylabel("WLOGP")
+    ax.legend(loc="upper right", fontsize=8)
+
+    buf = BytesIO()
+    plt.savefig(buf, format=image_type, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+
+    return buf.getvalue()

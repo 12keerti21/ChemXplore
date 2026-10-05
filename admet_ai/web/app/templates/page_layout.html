@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ChemXplore{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/results.css', _external=True) }}">
+    <style>
+        body {
+            margin: 0;
+            background: #f5f7fa;
+            color: #1f2933;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.5;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .brand {
+            color: #667eea;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button {
+            border: 1px solid #667eea;
+            background: #667eea;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button.secondary {
+            background: transparent;
+            color: #4c51bf;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #d9dee5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            margin: 0 0 12px;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            margin: 20px 0 8px;
+        }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .meta div {
+            background: #f5f7fa;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .meta strong {
+            display: block;
+            font-size: 0.8rem;
+            color: #616e7c;
+            font-weight: 600;
+        }
+
+        .images {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .images > div {
+            width: 220px;
+            height: 220px;
+        }
+
+        .smiles {
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+            color: #616e7c;
+        }
+
+        .page-footer {
+            color: #616e7c;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .card {
+                border: none;
+                padding: 0;
+                break-inside: avoid-page;
+            }
+
+            .molecule {
+                break-before: page;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+<div class="page">
+    {% block content %}{% endblock %}
+    <p class="page-footer">
+        ChemXplore {{ version }} &middot; Built on <a href="https://github.com/swansonk14/admet_ai">ADMET-AI</a>.
+        Predictions are for research screening only.
+    </p>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>
