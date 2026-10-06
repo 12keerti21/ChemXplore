@@ -1,0 +1,7 @@
+# JSME is a third-party molecule editor bundle, so keep it out of the language stats
+admet_ai/web/app/static/jsme/** linguist-vendored
+
+# Model checkpoints and figures are binary
+*.pt binary
+*.png binary
+*.jpg binary
