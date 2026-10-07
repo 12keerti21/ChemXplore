@@ -51,6 +51,8 @@ reach the brain (yolk):
 
 ## Table of contents
 
+**Presenting this project?** Start with the [demo guide](docs/DEMO.md): what it does in plain language, the exact commands, a click-by-click script and the questions you may be asked.
+
 - [Features](#features)
 - [A look around](#a-look-around)
 - [Installation](#installation)
